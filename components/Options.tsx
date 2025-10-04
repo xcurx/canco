@@ -1,0 +1,48 @@
+import { RendererContext } from '@/app/page'
+import React, { useContext, useState } from 'react'
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Rectangle } from '@/canvas/rectangle'
+import { Circle } from '@/canvas/circle'
+import { RectangleHorizontal, Circle as CircleIcon } from 'lucide-react'
+
+const Options = () => {
+    const {renderer} = useContext(RendererContext)
+    const [currentOption, setCurrentOption] = useState<string | undefined>("")
+
+    const handleOptionChange = (value: string) => {
+        if (!renderer) return
+        console.log("Option changed to: ", value);
+
+        if (value === "") {
+            setCurrentOption("")
+            renderer.currentOption = null
+            return
+        }
+
+        if (value === "rectangle") {
+            setCurrentOption("rectangle")
+            renderer.currentOption = Rectangle
+        }
+
+        if (value === "circle") {
+            setCurrentOption("circle")
+            renderer.currentOption = Circle
+        }
+    }
+
+  return (
+    <ToggleGroup 
+     type="single" 
+     variant={"outline"} 
+     value={currentOption}
+     onValueChange={(value) => handleOptionChange(value)}
+     className='absolute top-4 left-1/2 -translate-x-1/2 z-10'
+    >
+      <ToggleGroupItem value="rectangle"><RectangleHorizontal/></ToggleGroupItem>
+      <ToggleGroupItem value="circle"><CircleIcon/></ToggleGroupItem>   
+      {/* <ToggleGroupItem value="c">C</ToggleGroupItem> */}
+    </ToggleGroup>
+  )
+}
+
+export default Options
