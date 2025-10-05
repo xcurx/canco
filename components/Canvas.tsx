@@ -20,7 +20,7 @@ const Canvas = () => {
     useEffect(() => {
       if(ctx){
           console.log("context set");
-          const renderer = render(ctx)
+          const renderer = render(ctx, canvas.current!)
           console.log("renderer created: ", renderer);
           setRenderer(renderer)
       }

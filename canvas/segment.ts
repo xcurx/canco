@@ -1,5 +1,6 @@
 import React from "react"
 import { Point } from "./point"
+import { CanvasCoords } from "./renderer"
 
 export class Segment{
     public p1: Point
@@ -18,16 +19,16 @@ export class Segment{
         ctx.stroke()
     }
 
-    isHovered = (e:MouseEvent) => {
+    isHovered = (coords:CanvasCoords) => {
         if(this.p1.x == this.p2.x){
-            return (this.p1.x - 10 <= e.clientX && this.p1.x + 15 >= e.clientX) && 
-                   ((this.p1.y <= e.clientY && this.p2.y >= e.clientY) ||
-                   (this.p2.y <= e.clientY && this.p1.y >= e.clientY)) 
+            return (this.p1.x - 10 <= coords.x && this.p1.x + 15 >= coords.x) && 
+                   ((this.p1.y <= coords.y && this.p2.y >= coords.y) ||
+                   (this.p2.y <= coords.y && this.p1.y >= coords.y)) 
         }
         if(this.p1.y == this.p2.y){
-            return (this.p1.y - 10 <= e.clientY && this.p1.y + 15 >= e.clientY) && 
-                   ((this.p1.x <= e.clientX && this.p2.x >= e.clientX) ||
-                   (this.p2.x <= e.clientX && this.p1.x >= e.clientX)) 
+            return (this.p1.y - 10 <= coords.y && this.p1.y + 15 >= coords.y) && 
+                   ((this.p1.x <= coords.x && this.p2.x >= coords.x) ||
+                   (this.p2.x <= coords.x && this.p1.x >= coords.x)) 
         }
     }
 }

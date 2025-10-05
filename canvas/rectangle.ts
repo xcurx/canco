@@ -1,3 +1,4 @@
+import { CanvasCoords } from "./renderer";
 import { Shape } from "./shape";
 
 class Rectangle extends Shape {
@@ -43,10 +44,10 @@ class Rectangle extends Shape {
         this.rectPos.y = this.pos.y + this.difference
     }
 
-    checkSelection(e: MouseEvent): boolean {
+    checkSelection(coords: CanvasCoords): boolean {
         let isSelectable = false
         for(let i=0; i<this.segments.length; i++){
-            if(this.segments[i].isHovered(e)){
+            if(this.segments[i].isHovered(coords)){
                 isSelectable = true
                 return isSelectable
             }

@@ -3,45 +3,52 @@ import { Point } from "./point"
 import { Rectangle } from "./rectangle"
 import { Shape } from "./shape"
 
+enum CanvasState {
+    IDLE = "idle",
+    CREATING_SHAPE = "creating_shape", 
+    MOVING_OBJECT = "moving_object",
+    RESIZING_OBJECT = "resizing_object"
+}
+
 type Object = Rectangle | Circle
+export type CanvasCoords = {x: number, y: number}
 
 class Renderer{
     ctx: CanvasRenderingContext2D
+    canvas: HTMLCanvasElement
+
     currentOption: {new(): Object} | null
     objects: Object[]
     current: Object | null
-    creating: boolean
+
+    state: CanvasState
 
     hover: {object: Object, point: Point} | null
-    isPointMove: boolean
 
     isSelectable: Object | null
     selected: Object | null
 
-    isMoving: boolean
     dragOffset: {x:number,y:number} | undefined
 
     startPoint: {x:number | null, y:number | null}
 
     color: string
 
-
-    constructor(ctx: CanvasRenderingContext2D){
+    constructor(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement){
         this.ctx = ctx
+        this.canvas = canvas
 
         this.currentOption = null
-
         this.objects = []
         this.current = null
-        this.creating = false
+
+        this.state = CanvasState.IDLE
 
         this.hover = null
-        this.isPointMove = false
         
         this.isSelectable = null
         this.selected = null
 
-        this.isMoving = false
         this.dragOffset
 
         this.startPoint = {
@@ -50,6 +57,14 @@ class Renderer{
         }
 
         this.color = "white"
+    }
+
+    private getCanvasCoordinates(e: MouseEvent): {x: number, y: number} {
+        const rect = this.canvas.getBoundingClientRect()
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        }
     }
 
     add(obj: Object){
@@ -62,43 +77,45 @@ class Renderer{
             obj.draw(this.ctx)
         })
 
-        if(this.current && this.creating){
+        if(this.current && this.state === CanvasState.CREATING_SHAPE){
             this.current.draw(this.ctx)
         }
     }
 
     handleMouseDown = (e: MouseEvent) => {
         console.log("Down")
-        this.checkSelection(e)
+        
+        const canvasCoords = this.getCanvasCoordinates(e)
+        this.startPoint.x = canvasCoords.x
+        this.startPoint.y = canvasCoords.y
 
+        this.checkSelection(canvasCoords)
+        
         if(this.selected){
             if (this.selected.pos.x === undefined || this.selected.pos.y === undefined) return;
-            this.checkMouseHoverPoint(e)
-            if(this.checkMove(e)){
-                this.isMoving = true
+            this.checkMouseHoverPoint(canvasCoords)
+            if(this.checkMove(canvasCoords)){
+                this.state = CanvasState.MOVING_OBJECT
                 this.dragOffset = {
-                    x: e.clientX - this.selected.pos.x,
-                    y: e.clientY - this.selected.pos.y
+                    x: canvasCoords.x - this.selected.pos.x,
+                    y: canvasCoords.y - this.selected.pos.y
                 }
             }
         }else{
             this.hover = null
-            this.isMoving = false
+            this.state = CanvasState.IDLE
         }
 
-        this.startPoint.y = e.clientY
-        this.startPoint.x = e.clientX
-
         if(this.hover){
-            this.isPointMove = true
+            this.state = CanvasState.RESIZING_OBJECT
         }else if(this.isSelectable){
             this.isSelectable.isSelected = true
             if(this.selected && this.selected != this.isSelectable){
                 this.selected.isSelected = false
             }
             this.selected = this.isSelectable
-        }else if(!this.isMoving && this.currentOption){
-            this.creating = true
+        }else if(this.state === CanvasState.IDLE && this.currentOption){
+            this.state = CanvasState.CREATING_SHAPE
             this.current = new this.currentOption()
             this.current.color = this.color
             if(this.selected){
@@ -111,23 +128,24 @@ class Renderer{
     }
     
     handleMouseMove = (e: MouseEvent) => {
-        if(this.isPointMove){
-            this.checkMouseHoverPoint(e)
+        const canvasCoords = this.getCanvasCoordinates(e)
+        if(this.state === CanvasState.RESIZING_OBJECT){
+            this.checkMouseHoverPoint(canvasCoords)
         }
 
-        if(this.creating && this.current){
+        if(this.state === CanvasState.CREATING_SHAPE && this.current){
             if (this.startPoint.x === null || this.startPoint.y === null) return;
-            this.current.updateDimensions(this.startPoint.x, this.startPoint.y, e.clientX, e.clientY)
+            this.current.updateDimensions(this.startPoint.x, this.startPoint.y, canvasCoords.x, canvasCoords.y)
             this.selected = this.current
             this.render()
             requestAnimationFrame(this.animate)
         }
         
-        else if(this.isPointMove){
+        else if(this.state === CanvasState.RESIZING_OBJECT){
             if(!this.hover || !this.hover.point) return
             const hoverIndex = this.objects.indexOf(this.hover?.object)
             const hoverPointIndex = this.objects[hoverIndex].points.indexOf(this.hover.point)
-            this.objects[hoverIndex].resize(this.hover.point, e.clientX, e.clientY)
+            this.objects[hoverIndex].resize(this.hover.point, canvasCoords.x, canvasCoords.y)
             this.hover.object = this.objects[hoverIndex]
             this.hover.point = this.objects[hoverIndex].points[hoverPointIndex]
             this.selected = this.hover.object
@@ -135,10 +153,10 @@ class Renderer{
             requestAnimationFrame(this.animate)
         }
 
-        else if(this.isMoving){
+        else if(this.state === CanvasState.MOVING_OBJECT){
             if(!this.selected || !this.dragOffset) return
-            const offsetX = e.clientX - this.dragOffset.x;
-            const offsetY = e.clientY - this.dragOffset.y;
+            const offsetX = canvasCoords.x - this.dragOffset.x;
+            const offsetY = canvasCoords.y - this.dragOffset.y;
             this.selected.move(offsetX,offsetY)
             this.render()
             requestAnimationFrame(this.animate)
@@ -148,38 +166,45 @@ class Renderer{
     handleMouseUp = () => {
         if(this.current && (Math.abs(this.current.dim.width) > 15 && Math.abs(this.current.dim.height) > 15)){
             this.add(this.current)
-        }else if(!this.hover && !this.isSelectable && !this.isMoving){
+        }else if(!this.hover && !this.isSelectable && this.state !== CanvasState.MOVING_OBJECT){
             this.selected = null
         }
-        this.creating = false
-        this.isPointMove = false
+        this.state = CanvasState.IDLE
         this.hover = null
-        this.isMoving = false
         this.current = null
         // console.log(this.selected);
         this.render();
     }
 
     addEventListners(){
-        addEventListener("mousedown", (e) => this.handleMouseDown(e))
-        addEventListener("mousemove", (e) => this.handleMouseMove(e))
-        addEventListener("mouseup", () => this.handleMouseUp())
-        addEventListener("resize", () => {
-            this.ctx.canvas.width = innerWidth
-            this.ctx.canvas.height = innerHeight
-            this.render()
-        })
+        this.canvas.addEventListener("mousedown", this.handleMouseDown)
+        this.canvas.addEventListener("mousemove", this.handleMouseMove)
+        this.canvas.addEventListener("mouseup", this.handleMouseUp)
+        addEventListener("resize", this.handleResize)
     }
 
-    checkMouseHoverPoint = (e: MouseEvent) => {
-        if(this.isPointMove || !this.selected) return
+    cleanup(){
+        this.canvas.removeEventListener("mousedown", this.handleMouseDown)
+        this.canvas.removeEventListener("mousemove", this.handleMouseMove)
+        this.canvas.removeEventListener("mouseup", this.handleMouseUp)
+        removeEventListener("resize", this.handleResize)
+    }
+
+    handleResize = () => {
+        this.ctx.canvas.width = innerWidth
+        this.ctx.canvas.height = innerHeight
+        this.render()
+    }
+
+    checkMouseHoverPoint = (coords: CanvasCoords) => {
+        if(this.state === CanvasState.RESIZING_OBJECT || !this.selected) return
         let isHovering = false
         for(let i=0; i<this.selected.points.length; i++){
             isHovering =
-                e.clientX >= this.selected.points[i].x - this.selected.points[i].radius &&
-                e.clientX <= this.selected.points[i].x + this.selected.points[i].radius &&
-                e.clientY >= this.selected.points[i].y - this.selected.points[i].radius &&
-                e.clientY <= this.selected.points[i].y + this.selected.points[i].radius
+                coords.x >= this.selected.points[i].x - this.selected.points[i].radius &&
+                coords.x <= this.selected.points[i].x + this.selected.points[i].radius &&
+                coords.y >= this.selected.points[i].y - this.selected.points[i].radius &&
+                coords.y <= this.selected.points[i].y + this.selected.points[i].radius
 
             if(isHovering){
                 this.hover = {
@@ -194,10 +219,10 @@ class Renderer{
         }
     }
 
-    checkSelection = (e: MouseEvent) => {
+    checkSelection = (coords: CanvasCoords) => {
         let isSelectable = false
         for(let i=0; i<this.objects.length; i++){
-            isSelectable = this.objects[i].checkSelection(e)
+            isSelectable = this.objects[i].checkSelection(coords)
             if(isSelectable){
                 this.isSelectable = this.objects[i]
                 return
@@ -208,12 +233,12 @@ class Renderer{
         }
     }
 
-    checkMove = (e: MouseEvent) => {
+    checkMove = (coords: CanvasCoords) => {
         if(!this.selected) return
-        const isMovePossible = (this.selected.points[0].x <= e.clientX && this.selected.points[0].y <= e.clientY
-                               && this.selected.points[4].x >= e.clientX && this.selected.points[4].y >= e.clientY)
-                               || (this.selected.points[4].x <= e.clientX && this.selected.points[4].y <= e.clientY
-                               && this.selected.points[0].x >= e.clientX && this.selected.points[0].y >= e.clientY)
+        const isMovePossible = (this.selected.points[0].x <= coords.x && this.selected.points[0].y <= coords.y
+                               && this.selected.points[4].x >= coords.x && this.selected.points[4].y >= coords.y)
+                               || (this.selected.points[4].x <= coords.x && this.selected.points[4].y <= coords.y
+                               && this.selected.points[0].x >= coords.x && this.selected.points[0].y >= coords.y)
         return isMovePossible
     }
 

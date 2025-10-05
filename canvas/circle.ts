@@ -1,3 +1,4 @@
+import { CanvasCoords } from "./renderer";
 import { Shape } from "./shape";
 
 class Circle extends Shape{
@@ -45,13 +46,13 @@ class Circle extends Shape{
         this.radius.y = Math.abs(this.dim.height/2 - this.difference)
     }
 
-    checkSelection(e: MouseEvent): boolean {
+    checkSelection(coords: CanvasCoords): boolean {
         if (this.circlePos.x === undefined || this.circlePos.y === undefined) return false;
         if (this.radius.x === undefined || this.radius.y === undefined) return false;
 
         // using equation of ellipse
-        const mouseX = e.clientX
-        const mouseY = e.clientY
+        const mouseX = coords.x
+        const mouseY = coords.y
 
         const dx = mouseX - this.circlePos.x
         const dy = mouseY - this.circlePos.y
