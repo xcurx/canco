@@ -1,8 +1,6 @@
 import { RendererContext } from '@/app/page'
 import React, { useContext, useState } from 'react'
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Rectangle } from '@/canvas/rectangle'
-import { Circle } from '@/canvas/circle'
 import { RectangleHorizontal, Circle as CircleIcon } from 'lucide-react'
 
 const Options = () => {
