@@ -1,65 +1,60 @@
-import { Circle } from "./circle"
-import { Point } from "./point"
-import { Rectangle } from "./rectangle"
-import { Shape } from "./shape"
+import { 
+    ShapeData, 
+    CanvasCoords, 
+    CanvasState as CanvasStateEnum,
+    Operation
+} from './type'
+import { CanvasState, createRectangleData, createCircleData } from './state'
+import { renderShape, isPointInShape, getClickedHandle, getResizeHandles, isPointInShapeInterior } from './rendering'
 
-enum CanvasState {
-    IDLE = "idle",
-    CREATING_SHAPE = "creating_shape", 
-    MOVING_OBJECT = "moving_object",
-    RESIZING_OBJECT = "resizing_object"
-}
-
-type Object = Rectangle | Circle
-export type CanvasCoords = {x: number, y: number}
-
-class Renderer{
+export class Renderer {
     ctx: CanvasRenderingContext2D
     canvas: HTMLCanvasElement
+    
+    private canvasState: CanvasState = new CanvasState()
+    private operationHistory: Operation[] = []
 
-    currentOption: {new(): Object} | null
-    objects: Object[]
-    current: Object | null
+    currentShapeType: string | null = null
+    state: CanvasStateEnum = CanvasStateEnum.IDLE
 
-    state: CanvasState
+    private tempShape: ShapeData | null = null
+    private dragOffset: {x: number, y: number} | null = null
+    private resizeHandle: { x: number, y: number, type: string } | null = null
+    private startPoint: CanvasCoords | null = null
 
-    hover: {object: Object, point: Point} | null
+    private hoveredShape: ShapeData | null = null
+    private clickedHandle: { x: number, y: number, type: string } | null = null
 
-    isSelectable: Object | null
-    selected: Object | null
+    color: string = 'white'
 
-    dragOffset: {x:number,y:number} | undefined
-
-    startPoint: {x:number | null, y:number | null}
-
-    color: string
-
-    constructor(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement){
+    constructor(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, initialShapes?: ShapeData[]) {
         this.ctx = ctx
         this.canvas = canvas
-
-        this.currentOption = null
-        this.objects = []
-        this.current = null
-
-        this.state = CanvasState.IDLE
-
-        this.hover = null
-        
-        this.isSelectable = null
-        this.selected = null
-
-        this.dragOffset
-
-        this.startPoint = {
-            x:null,
-            y:null
-        }
-
-        this.color = "white"
+        this.canvasState = new CanvasState(initialShapes)
+        this.addEventListeners()
+        this.render()
     }
 
-    private getCanvasCoordinates(e: MouseEvent): {x: number, y: number} {
+    private applyOperation(operation: Operation) {
+        this.canvasState = CanvasState.applyOperation(this.canvasState, operation)
+        this.operationHistory.push(operation)
+        this.render()
+    }
+
+    render() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+
+        const shapes = this.canvasState.getAllShapes()
+        shapes.forEach(shape => {
+            renderShape(this.ctx, shape)
+        })
+
+        if (this.tempShape && this.state === CanvasStateEnum.CREATING_SHAPE) {
+            renderShape(this.ctx, this.tempShape)
+        }
+    }
+
+    private getCanvasCoordinates(e: MouseEvent): CanvasCoords {
         const rect = this.canvas.getBoundingClientRect()
         return {
             x: e.clientX - rect.left,
@@ -67,127 +62,197 @@ class Renderer{
         }
     }
 
-    add(obj: Object){
-        this.objects.push(obj)
-    }
-
-    render(){
-        this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height)
-        this.objects.forEach(obj => {
-            obj.draw(this.ctx)
-        })
-
-        if(this.current && this.state === CanvasState.CREATING_SHAPE){
-            this.current.draw(this.ctx)
-        }
-    }
-
     handleMouseDown = (e: MouseEvent) => {
-        console.log("Down")
-        
-        const canvasCoords = this.getCanvasCoordinates(e)
-        this.startPoint.x = canvasCoords.x
-        this.startPoint.y = canvasCoords.y
+        const coords = this.getCanvasCoordinates(e)
+        this.startPoint = coords
 
-        this.checkSelection(canvasCoords)
-        
-        if(this.selected){
-            if (this.selected.pos.x === undefined || this.selected.pos.y === undefined) return;
-            this.checkMouseHoverPoint(canvasCoords)
-            if(this.checkMove(canvasCoords)){
-                this.state = CanvasState.MOVING_OBJECT
+        const selectedShape = this.canvasState.getSelectedShape()
+        if (selectedShape) {
+            this.clickedHandle = getClickedHandle(coords, selectedShape)
+            if (this.clickedHandle) {
+                this.state = CanvasStateEnum.RESIZING_OBJECT
+                this.resizeHandle = this.clickedHandle
+                return
+            }
+
+            if (isPointInShapeInterior(coords, selectedShape)) {
+                this.state = CanvasStateEnum.MOVING_OBJECT
                 this.dragOffset = {
-                    x: canvasCoords.x - this.selected.pos.x,
-                    y: canvasCoords.y - this.selected.pos.y
+                    x: coords.x - selectedShape.x,
+                    y: coords.y - selectedShape.y
                 }
+                return
             }
-        }else{
-            this.hover = null
-            this.state = CanvasState.IDLE
         }
 
-        if(this.hover){
-            this.state = CanvasState.RESIZING_OBJECT
-        }else if(this.isSelectable){
-            this.isSelectable.isSelected = true
-            if(this.selected && this.selected != this.isSelectable){
-                this.selected.isSelected = false
+        const shapes = this.canvasState.getAllShapes()
+        let clickedShape: ShapeData | null = null
+        // reverse order to prioritize topmost shapes
+        for (let i = shapes.length - 1; i >= 0; i--) {
+            if (isPointInShape(coords, shapes[i])) {
+                clickedShape = shapes[i]
+                break
             }
-            this.selected = this.isSelectable
-        }else if(this.state === CanvasState.IDLE && this.currentOption){
-            this.state = CanvasState.CREATING_SHAPE
-            this.current = new this.currentOption()
-            this.current.color = this.color
-            if(this.selected){
-                this.selected.isSelected = false
+        }
+
+        if (clickedShape) {
+            if (!clickedShape.isSelected) {
+                this.applyOperation(CanvasState.selectShape(clickedShape.id))
             }
-            this.selected = this.current
-            this.current.updateDimensions(this.startPoint.x, this.startPoint.y, this.startPoint.x, this.startPoint.y)
-        }   
-        // console.log(this.selected);
+
+            // prepare for potential move
+            this.state = CanvasStateEnum.MOVING_OBJECT
+            this.dragOffset = {
+                x: coords.x - clickedShape.x,
+                y: coords.y - clickedShape.y
+            }
+        } else {
+            this.applyOperation(CanvasState.deselectAll())
+            if (this.currentShapeType) {
+                this.state = CanvasStateEnum.CREATING_SHAPE
+                this.startCreateShape(coords)
+            } else {
+                this.state = CanvasStateEnum.IDLE
+            }
+        }
     }
-    
+
     handleMouseMove = (e: MouseEvent) => {
-        const canvasCoords = this.getCanvasCoordinates(e)
-        if(this.state === CanvasState.RESIZING_OBJECT){
-            this.checkMouseHoverPoint(canvasCoords)
-        }
+        const coords = this.getCanvasCoordinates(e)
 
-        if(this.state === CanvasState.CREATING_SHAPE && this.current){
-            if (this.startPoint.x === null || this.startPoint.y === null) return;
-            this.current.updateDimensions(this.startPoint.x, this.startPoint.y, canvasCoords.x, canvasCoords.y)
-            this.selected = this.current
-            this.render()
-            requestAnimationFrame(this.animate)
-        }
-        
-        else if(this.state === CanvasState.RESIZING_OBJECT){
-            if(!this.hover || !this.hover.point) return
-            const hoverIndex = this.objects.indexOf(this.hover?.object)
-            const hoverPointIndex = this.objects[hoverIndex].points.indexOf(this.hover.point)
-            this.objects[hoverIndex].resize(this.hover.point, canvasCoords.x, canvasCoords.y)
-            this.hover.object = this.objects[hoverIndex]
-            this.hover.point = this.objects[hoverIndex].points[hoverPointIndex]
-            this.selected = this.hover.object
-            this.render()
-            requestAnimationFrame(this.animate)
-        }
+        switch(this.state) {
+            case CanvasStateEnum.CREATING_SHAPE:
+                if (this.tempShape && this.startPoint) {
+                    this.updateTempShape(this.startPoint, coords)
+                    this.render()
+                }
+                break
 
-        else if(this.state === CanvasState.MOVING_OBJECT){
-            if(!this.selected || !this.dragOffset) return
-            const offsetX = canvasCoords.x - this.dragOffset.x;
-            const offsetY = canvasCoords.y - this.dragOffset.y;
-            this.selected.move(offsetX,offsetY)
-            this.render()
-            requestAnimationFrame(this.animate)
+            case CanvasStateEnum.MOVING_OBJECT:
+                const selectedShape = this.canvasState.getSelectedShape()
+                if (selectedShape && this.dragOffset) {
+                    const newX = coords.x - this.dragOffset.x
+                    const newY = coords.y - this.dragOffset.y
+                    this.applyOperation(CanvasState.updateShape(selectedShape.id, { x: newX, y: newY }))
+                }
+                break
+
+            case CanvasStateEnum.RESIZING_OBJECT:
+                const resizingShape = this.canvasState.getSelectedShape()
+                if (resizingShape && this.resizeHandle) {
+                    const newDimensions = this.calculateResize(resizingShape, this.resizeHandle, coords)
+                    this.applyOperation(CanvasState.updateShape(resizingShape.id, newDimensions))
+                }
+                break
         }
     }
 
-    handleMouseUp = () => {
-        if(this.current && (Math.abs(this.current.dim.width) > 15 && Math.abs(this.current.dim.height) > 15)){
-            this.add(this.current)
-        }else if(!this.hover && !this.isSelectable && this.state !== CanvasState.MOVING_OBJECT){
-            this.selected = null
+    handleMouseUp = (e: MouseEvent) => {
+        if (this.state === CanvasStateEnum.CREATING_SHAPE && this.tempShape) {
+            //only add if its big enough
+            if (Math.abs(this.tempShape.width) > 15 && Math.abs(this.tempShape.height) > 15) {
+                this.applyOperation(CanvasState.createShape(this.tempShape))
+            }
         }
-        this.state = CanvasState.IDLE
-        this.hover = null
-        this.current = null
-        // console.log(this.selected);
-        this.render();
+
+        this.state = CanvasStateEnum.IDLE
+        this.tempShape = null
+        this.dragOffset = null
+        this.resizeHandle = null
+        this.startPoint = null
+        this.clickedHandle = null
+
+        this.render()
     }
 
-    addEventListners(){
-        this.canvas.addEventListener("mousedown", this.handleMouseDown)
-        this.canvas.addEventListener("mousemove", this.handleMouseMove)
-        this.canvas.addEventListener("mouseup", this.handleMouseUp)
-        addEventListener("resize", this.handleResize)
+    private startCreateShape(coords: CanvasCoords) {
+        if (!this.currentShapeType) return
+
+        switch (this.currentShapeType) {
+            case 'rectangle':
+                this.tempShape = createRectangleData(coords.x, coords.y, 0, 0, this.color)
+                break
+            case 'circle':
+                this.tempShape = createCircleData(coords.x, coords.y, 0, 0, this.color)
+                break
+        }
     }
 
-    cleanup(){
-        this.canvas.removeEventListener("mousedown", this.handleMouseDown)
-        this.canvas.removeEventListener("mousemove", this.handleMouseMove)
-        this.canvas.removeEventListener("mouseup", this.handleMouseUp)
-        removeEventListener("resize", this.handleResize)
+    private updateTempShape(startCoords: CanvasCoords, currentCoords: CanvasCoords) {
+        if (!this.tempShape) return
+
+        const width = currentCoords.x - startCoords.x
+        const height = currentCoords.y - startCoords.y
+
+        this.tempShape.x = width < 0 ? startCoords.x + width : startCoords.x
+        this.tempShape.y = height < 0 ? startCoords.y + height : startCoords.y
+        this.tempShape.width = Math.abs(width)
+        this.tempShape.height = Math.abs(height)
+    }
+
+    private calculateResize(shape: ShapeData, handle: { x: number, y: number, type: string }, currentCoords: CanvasCoords): Partial<ShapeData> {
+        const newDimensions: Partial<ShapeData> = {}
+
+        switch (handle.type) {
+            case 'top-left':
+                newDimensions.x = currentCoords.x
+                newDimensions.y = currentCoords.y
+                newDimensions.width = (shape.x + shape.width) - currentCoords.x
+                newDimensions.height = (shape.y + shape.height) - currentCoords.y
+                break
+            case 'top-middle':
+                newDimensions.y = currentCoords.y
+                newDimensions.height = (shape.y + shape.height) - currentCoords.y
+                break
+            case 'top-right':
+                newDimensions.y = currentCoords.y
+                newDimensions.width = currentCoords.x - shape.x
+                newDimensions.height = (shape.y + shape.height) - currentCoords.y
+                break
+            case 'middle-left':
+                newDimensions.x = currentCoords.x
+                newDimensions.width = (shape.x + shape.width) - currentCoords.x
+                break
+            case 'middle-right':
+                newDimensions.width = currentCoords.x - shape.x
+                break
+            case 'bottom-left':
+                newDimensions.x = currentCoords.x
+                newDimensions.width = (shape.x + shape.width) - currentCoords.x
+                newDimensions.height = currentCoords.y - shape.y
+                break
+            case 'bottom-middle':
+                newDimensions.height = currentCoords.y - shape.y
+                break
+            case 'bottom-right':
+                newDimensions.width = currentCoords.x - shape.x
+                newDimensions.height = currentCoords.y - shape.y
+                break
+        }
+
+        if (newDimensions.width !== undefined) {
+            newDimensions.width = Math.max(newDimensions.width, 15)
+        }
+
+        if (newDimensions.height !== undefined) {
+            newDimensions.height = Math.max(newDimensions.height, 15)
+        }
+
+        return newDimensions
+    }
+
+    addEventListeners() {
+        this.canvas.addEventListener('mousedown', this.handleMouseDown)
+        this.canvas.addEventListener('mousemove', this.handleMouseMove)
+        this.canvas.addEventListener('mouseup', this.handleMouseUp)
+        addEventListener('resize', this.handleResize)
+    }
+
+    cleanup() {
+        this.canvas.removeEventListener('mousedown', this.handleMouseDown)
+        this.canvas.removeEventListener('mousemove', this.handleMouseMove)
+        this.canvas.removeEventListener('mouseup', this.handleMouseUp)
+        removeEventListener('resize', this.handleResize)
     }
 
     handleResize = () => {
@@ -196,55 +261,19 @@ class Renderer{
         this.render()
     }
 
-    checkMouseHoverPoint = (coords: CanvasCoords) => {
-        if(this.state === CanvasState.RESIZING_OBJECT || !this.selected) return
-        let isHovering = false
-        for(let i=0; i<this.selected.points.length; i++){
-            isHovering =
-                coords.x >= this.selected.points[i].x - this.selected.points[i].radius &&
-                coords.x <= this.selected.points[i].x + this.selected.points[i].radius &&
-                coords.y >= this.selected.points[i].y - this.selected.points[i].radius &&
-                coords.y <= this.selected.points[i].y + this.selected.points[i].radius
-
-            if(isHovering){
-                this.hover = {
-                    object: this.selected,
-                    point: this.selected.points[i]
-                } 
-                return
-            }
-        }
-        if(!isHovering){
-            this.hover = null
-        }
-    }
-
-    checkSelection = (coords: CanvasCoords) => {
-        let isSelectable = false
-        for(let i=0; i<this.objects.length; i++){
-            isSelectable = this.objects[i].checkSelection(coords)
-            if(isSelectable){
-                this.isSelectable = this.objects[i]
-                return
-            }
-        }
-        if(!isSelectable){
-            this.isSelectable = null
-        }
-    }
-
-    checkMove = (coords: CanvasCoords) => {
-        if(!this.selected) return
-        const isMovePossible = (this.selected.points[0].x <= coords.x && this.selected.points[0].y <= coords.y
-                               && this.selected.points[4].x >= coords.x && this.selected.points[4].y >= coords.y)
-                               || (this.selected.points[4].x <= coords.x && this.selected.points[4].y <= coords.y
-                               && this.selected.points[0].x >= coords.x && this.selected.points[0].y >= coords.y)
-        return isMovePossible
-    }
-
     animate = () => {
-        this.render();
+        this.render()
+    }
+
+    setCurrentTool(tool: string | null) {
+        this.currentShapeType = tool
+    }
+
+    getState() {
+        return {
+            canvasState: this.canvasState,
+            currentTool: this.currentShapeType,
+            interactionState: this.state
+        }
     }
 }
-
-export { Renderer }

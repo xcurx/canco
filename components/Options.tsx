@@ -15,18 +15,20 @@ const Options = () => {
 
         if (value === "") {
             setCurrentOption("")
-            renderer.currentOption = null
+            renderer.setCurrentTool(null)
             return
         }
 
         if (value === "rectangle") {
             setCurrentOption("rectangle")
-            renderer.currentOption = Rectangle
+            renderer.setCurrentTool("rectangle")
+            return
         }
 
         if (value === "circle") {
             setCurrentOption("circle")
-            renderer.currentOption = Circle
+            renderer.setCurrentTool("circle")
+            return
         }
     }
 
