@@ -10,6 +10,10 @@ export interface BaseShapeData {
     zIndex: number
 }
 
+export interface LineData extends BaseShapeData {
+    type: 'line'
+}
+
 export interface RectangleData extends BaseShapeData {
     type: 'rectangle'
 }
@@ -18,7 +22,7 @@ export interface CircleData extends BaseShapeData {
     type: 'circle'
 }
 
-export type ShapeData = RectangleData | CircleData
+export type ShapeData = RectangleData | CircleData | LineData
 
 export interface Operation {
     id: string

@@ -1,7 +1,7 @@
 import { RendererContext } from '@/app/page'
 import React, { useContext, useState } from 'react'
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { RectangleHorizontal, Circle as CircleIcon } from 'lucide-react'
+import { RectangleHorizontal, Circle as CircleIcon, LineChartIcon } from 'lucide-react'
 
 const Options = () => {
     const {renderer} = useContext(RendererContext)
@@ -14,6 +14,12 @@ const Options = () => {
         if (value === "") {
             setCurrentOption("")
             renderer.setCurrentTool(null)
+            return
+        }
+
+        if (value === "line") {
+            setCurrentOption("line")
+            renderer.setCurrentTool("line")
             return
         }
 
@@ -40,7 +46,7 @@ const Options = () => {
     >
       <ToggleGroupItem value="rectangle"><RectangleHorizontal/></ToggleGroupItem>
       <ToggleGroupItem value="circle"><CircleIcon/></ToggleGroupItem>   
-      {/* <ToggleGroupItem value="c">C</ToggleGroupItem> */}
+      <ToggleGroupItem value="line"><LineChartIcon/></ToggleGroupItem>
     </ToggleGroup>
   )
 }

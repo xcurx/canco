@@ -4,91 +4,18 @@ import {
     CircleData, 
     SELECTION_PADDING, 
     HANDLE_SIZE,
-    CanvasCoords
+    CanvasCoords,
+    LineData
 } from './type'
 
-export function renderRectangle(ctx: CanvasRenderingContext2D, shape: RectangleData): void {
-    ctx.beginPath()
-
-    ctx.rect(
-        shape.x,
-        shape.y,
-        shape.width,
-        shape.height
-    )
-
-    ctx.strokeStyle = shape.color
-    ctx.stroke()
-
-    if (shape.isSelected) {
-        drawSelectionCage(ctx, shape)
-    }
-}
-
-export function renderCircle(ctx: CanvasRenderingContext2D, shape: CircleData): void {
-    ctx.beginPath()
-    
-    const centerX = shape.x + shape.width / 2
-    const centerY = shape.y + shape.height / 2
-    const radiusX = shape.width / 2
-    const radiusY = shape.height / 2
-
-    ctx.ellipse(
-        centerX,
-        centerY,
-        radiusX,
-        radiusY,
-        0,
-        0,
-        2 * Math.PI
-    )
-    ctx.strokeStyle = shape.color
-    ctx.stroke()
-
-    if (shape.isSelected) {
-        drawSelectionCage(ctx, shape)
-    }
-}
-
-export function renderShape(ctx: CanvasRenderingContext2D, shape: ShapeData): void {
-    switch (shape.type) {
-        case 'rectangle':
-            renderRectangle(ctx, shape)
-            break
-        case 'circle':
-            renderCircle(ctx, shape)
-            break
-        default:
-            console.warn(`Unknown shape type: ${(shape as any).type}`)
-    }
-}
-
-export function drawSelectionCage(ctx: CanvasRenderingContext2D, shape: ShapeData): void {
-    const handles = getResizeHandles(shape)
-
-    ctx.setLineDash([5, 5])
-    ctx.strokeStyle = "#007acc"
-    ctx.lineWidth = 1
-    ctx.strokeRect(
-        shape.x - SELECTION_PADDING,
-        shape.y - SELECTION_PADDING,
-        shape.width + SELECTION_PADDING * 2,
-        shape.height + SELECTION_PADDING * 2
-    )
-    ctx.setLineDash([])
-
-    handles.forEach(handle => {
-        ctx.beginPath()
-        ctx.arc(handle.x, handle.y, HANDLE_SIZE, 0, 2 * Math.PI)
-        ctx.fillStyle = '#007acc'
-        ctx.fill()
-        ctx.strokeStyle = '#ffffff'
-        ctx.lineWidth = 2
-        ctx.stroke()
-    })
-}
-
 export function getResizeHandles(shape: ShapeData): Array<{x: number, y: number, type: string}> {
+    if (shape.type === 'line') {
+        return [
+            { x: shape.x, y: shape.y, type: 'start' },
+            { x: shape.x + shape.width, y: shape.y + shape.height, type: 'end' }
+        ]
+    }
+
     return [
         { x: shape.x - SELECTION_PADDING, y: shape.y - SELECTION_PADDING, type: 'top-left' },
         { x: shape.x + shape.width / 2, y: shape.y - SELECTION_PADDING, type: 'top-middle' },
@@ -103,6 +30,8 @@ export function getResizeHandles(shape: ShapeData): Array<{x: number, y: number,
 
 export function isPointInShape(coords: CanvasCoords, shape: ShapeData): boolean {
     switch (shape.type) {
+        case 'line':
+            return isPointInLine(coords, shape)
         case 'rectangle':
             return isPointInRectangle(coords, shape)
         case 'circle':
@@ -110,6 +39,44 @@ export function isPointInShape(coords: CanvasCoords, shape: ShapeData): boolean 
         default:
             return false
     }
+}
+
+function isPointInLine(coords: CanvasCoords, line: LineData): boolean {
+    const tolerance = 5 // click tolerance
+    const x1 = line.x
+    const y1 = line.y
+    const x2 = line.x + line.width
+    const y2 = line.y + line.height
+
+    const A = coords.x - x1
+    const B = coords.y - y1
+    const C = x2 - x1
+    const D = y2 - y1
+
+    const dot = A * C + B * D
+    const len_sq = C * C + D * D
+    let param = -1
+    if (len_sq !== 0) // in case of 0 length line
+        param = dot / len_sq
+
+    let xx, yy
+
+    if (param < 0) {
+        xx = x1
+        yy = y1
+    }
+    else if (param > 1) {
+        xx = x2
+        yy = y2
+    }
+    else {
+        xx = x1 + param * C
+        yy = y1 + param * D
+    }
+
+    const dx = coords.x - xx
+    const dy = coords.y - yy
+    return (dx * dx + dy * dy) <= tolerance * tolerance 
 }
 
 function isPointInRectangle(coords: CanvasCoords, rect: RectangleData): boolean {

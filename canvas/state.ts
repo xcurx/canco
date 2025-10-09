@@ -163,6 +163,20 @@ export class CanvasState {
     }
 }
 
+export function createLineData(x1: number, y1: number, x2: number, y2: number, color: string): ShapeData {
+    return {
+        id: crypto.randomUUID(),
+        type: 'line',
+        x: x1,
+        y: y1,
+        width: x2 - x1,
+        height: y2 - y1,
+        color,
+        isSelected: true,
+        zIndex: Date.now()
+    }
+}
+
 export function createRectangleData(x: number, y: number, width: number, height: number, color: string): RectangleData {
     return {
         id: crypto.randomUUID(),
