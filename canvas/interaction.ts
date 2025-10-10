@@ -1,168 +1,381 @@
 import { 
-    ShapeData, 
-    RectangleData, 
-    CircleData, 
-    SELECTION_PADDING, 
-    HANDLE_SIZE,
-    CanvasCoords,
-    LineData
+    CanvasCoords, 
+    CanvasState as CanvasStateEnum, 
+    ShapeData,
+    Operation 
 } from './type'
+import { CanvasState } from './state'
+import { 
+    getClickedHandle, 
+    isPointInShape, 
+    isPointInShapeInterior 
+} from './selection'
+import { ToolManager } from './tools'
 
-export function getResizeHandles(shape: ShapeData): Array<{x: number, y: number, type: string}> {
-    if (shape.type === 'line') {
-        return [
-            { x: shape.x, y: shape.y, type: 'start' },
-            { x: shape.x + shape.width, y: shape.y + shape.height, type: 'end' }
-        ]
-    }
-
-    return [
-        { x: shape.x - SELECTION_PADDING, y: shape.y - SELECTION_PADDING, type: 'top-left' },
-        { x: shape.x + shape.width / 2, y: shape.y - SELECTION_PADDING, type: 'top-middle' },
-        { x: shape.x + shape.width + SELECTION_PADDING, y: shape.y - SELECTION_PADDING, type: 'top-right' },
-        { x: shape.x - SELECTION_PADDING, y: shape.y + shape.height / 2, type: 'middle-left' },
-        { x: shape.x + shape.width + SELECTION_PADDING, y: shape.y + shape.height / 2, type: 'middle-right' },
-        { x: shape.x - SELECTION_PADDING, y: shape.y + shape.height + SELECTION_PADDING, type: 'bottom-left' },
-        { x: shape.x + shape.width / 2, y: shape.y + shape.height + SELECTION_PADDING, type: 'bottom-middle' },
-        { x: shape.x + shape.width + SELECTION_PADDING, y: shape.y + shape.height + SELECTION_PADDING, type: 'bottom-right' }
-    ]
+export type InteractionCallbacks = {
+    onStateChange: (state: CanvasStateEnum) => void
+    onApplyOperation: (operation: Operation) => void
+    onUpdateTempShape: (shape: ShapeData | null) => void
+    onUndo: () => void
+    onRedo: () => void
 }
 
-export function isPointInShape(coords: CanvasCoords, shape: ShapeData): boolean {
-    switch (shape.type) {
-        case 'line':
-            return isPointInLine(coords, shape)
-        case 'rectangle':
-            return isPointInRectangle(coords, shape)
-        case 'circle':
-            return isPointInCircle(coords, shape)
-        default:
-            return false
-    }
-}
-
-function isPointInLine(coords: CanvasCoords, line: LineData): boolean {
-    const tolerance = 5 // click tolerance
-    const x1 = line.x
-    const y1 = line.y
-    const x2 = line.x + line.width
-    const y2 = line.y + line.height
-
-    const A = coords.x - x1
-    const B = coords.y - y1
-    const C = x2 - x1
-    const D = y2 - y1
-
-    const dot = A * C + B * D
-    const len_sq = C * C + D * D
-    let param = -1
-    if (len_sq !== 0) // in case of 0 length line
-        param = dot / len_sq
-
-    let xx, yy
-
-    if (param < 0) {
-        xx = x1
-        yy = y1
-    }
-    else if (param > 1) {
-        xx = x2
-        yy = y2
-    }
-    else {
-        xx = x1 + param * C
-        yy = y1 + param * D
-    }
-
-    const dx = coords.x - xx
-    const dy = coords.y - yy
-    return (dx * dx + dy * dy) <= tolerance * tolerance 
-}
-
-function isPointInRectangle(coords: CanvasCoords, rect: RectangleData): boolean {
-    const tolerance = 3 // click tolerance
+export class InteractionManager {
+     private state: CanvasStateEnum = CanvasStateEnum.IDLE
     
-    const isNearBorder = (
-        // top/bottom edges
-        (coords.x >= rect.x - tolerance && coords.x <= rect.x + rect.width + tolerance &&
-         (Math.abs(coords.y - rect.y) <= tolerance || Math.abs(coords.y - (rect.y + rect.height)) <= tolerance)) ||
-        // left/right edges
-        (coords.y >= rect.y - tolerance && coords.y <= rect.y + rect.height + tolerance &&
-         (Math.abs(coords.x - rect.x) <= tolerance || Math.abs(coords.x - (rect.x + rect.width)) <= tolerance))
-    )
-    
-    return isNearBorder
-}
+    // Interaction state
+    private dragOffset: {x: number, y: number} | null = null
+    private resizeHandle: {x: number, y: number, type: string} | null = null
+    private startPoint: {x: number, y: number} | null = null
+    private tempShape: ShapeData | null = null
 
-function isPointInCircle(coords: CanvasCoords, circle: CircleData): boolean {
-    const centerX = circle.x + circle.width / 2
-    const centerY = circle.y + circle.height / 2
-    const radiusX = circle.width / 2 + SELECTION_PADDING
-    const radiusY = circle.height / 2 + SELECTION_PADDING
+    constructor(
+        private canvas: HTMLCanvasElement,
+        private callbacks: InteractionCallbacks,
+        private getCanvasState: () => CanvasState,
+        private toolManager: ToolManager
+    ) {
+        this.addEventListeners()
+    }
 
-    const dx = coords.x - centerX
-    const dy = coords.y - centerY
+    handleMouseDown(coords: CanvasCoords): void {
+        this.startPoint = coords
+        const canvasState = this.getCanvasState()
+        
+        console.log("Mouse down", this.state, this.toolManager.getCurrentTool())
 
-    const normX = dx / radiusX
-    const normY = dy / radiusY
+        // Priority 1: Check for handle clicks on selected shape (highest priority)
+        const selectedShape = canvasState.getSelectedShape()
+        if (selectedShape && this.handleResizeHandleClick(coords, selectedShape)) {
+            return
+        }
 
-    const distanceSquared = normX * normX + normY * normY
+        // Priority 2: Check for clicks inside selected shape (for moving)
+        if (selectedShape && this.handleSelectedShapeClick(coords, selectedShape)) {
+            return
+        }
 
-    return distanceSquared >= (1 - 0.15) && distanceSquared <= (1 + 0.15)
-}
+        // Priority 3: Check for clicks on any shape (for selection)
+        if (this.handleShapeSelectionClick(coords, canvasState)) {
+            return
+        }
 
-export function isPointInHandle(coords: CanvasCoords, handle: {x: number, y: number, type: string}): boolean {
-    const distance = Math.sqrt(
-        Math.pow(coords.x - handle.x, 2) + Math.pow(coords.y - handle.y, 2)
-    )
-    return distance <= HANDLE_SIZE + 4
-}
+        // Priority 4: Handle empty space clicks
+        this.handleEmptySpaceClick(coords)
+    }
 
-export function getClickedHandle(coords: CanvasCoords, shape: ShapeData): { x: number, y: number, type: string } | null {
-    const handles = getResizeHandles(shape)
+    handleMouseMove(coords: CanvasCoords): void {
+        switch (this.state) {
+            case CanvasStateEnum.CREATING_SHAPE:
+                this.handleCreateShapeMove(coords)
+                break
 
-    for (const handle of handles) {
-        if (isPointInHandle(coords, handle)) {
-            return handle
+            case CanvasStateEnum.MOVING_OBJECT:
+                this.handleMoveObjectMove(coords)
+                break
+
+            case CanvasStateEnum.RESIZING_OBJECT:
+                this.handleResizeObjectMove(coords)
+                break
+
+            case CanvasStateEnum.IDLE:
+                // Could add hover effects here in the future
+                break
         }
     }
 
-    return null
-}
+    handleMouseUp(): void {
+        switch (this.state) {
+            case CanvasStateEnum.CREATING_SHAPE:
+                this.finishCreateShape()
+                break
 
-export function isPointInShapeInterior(coords: CanvasCoords, shape: ShapeData): boolean {
-    switch (shape.type) {
-        case 'rectangle':
-            return isPointInRectangleInterior(coords, shape)
-        case 'circle':
-            return isPointInCircleInterior(coords, shape)
-        default:
-            return false
+            case CanvasStateEnum.MOVING_OBJECT:
+            case CanvasStateEnum.RESIZING_OBJECT:
+                // Operations were applied during mouse move, just reset state
+                break
+        }
+
+        this.resetInteractionState()
     }
-}
 
-function isPointInRectangleInterior(coords: CanvasCoords, rect: RectangleData): boolean {
-    return (
-        coords.x >= rect.x &&
-        coords.x <= rect.x + rect.width &&
-        coords.y >= rect.y &&
-        coords.y <= rect.y + rect.height
-    )
-}
+    handleKeyDown(e: KeyboardEvent): void {
+        // prevent default for all handled keys
+        const handled = this.processKeyboardShortcut(e)
+        if (handled) {
+            e.preventDefault()
+        }
+    }
 
-function isPointInCircleInterior(coords: CanvasCoords, circle: CircleData): boolean {
-    const centerX = circle.x + circle.width / 2
-    const centerY = circle.y + circle.height / 2
-    const radiusX = circle.width / 2
-    const radiusY = circle.height / 2
+    getState(): CanvasStateEnum {
+        return this.state
+    }
 
-    const dx = coords.x - centerX
-    const dy = coords.y - centerY
+    getTempShape(): ShapeData | null {
+        return this.tempShape
+    }
 
-    const normX = dx / radiusX
-    const normY = dy / radiusY
+    cleanup(): void {
+        this.canvas.removeEventListener("mousedown", this.onMouseDown)
+        this.canvas.removeEventListener("mousemove", this.onMouseMove)
+        this.canvas.removeEventListener("mouseup", this.onMouseUp)
+        removeEventListener("keydown", this.onKeyDown)
+    }
 
-    const distanceSquared = normX * normX + normY * normY
+    private handleResizeHandleClick(coords: CanvasCoords, selectedShape: ShapeData): boolean {
+        const clickedHandle = getClickedHandle(coords, selectedShape)
+        if (clickedHandle) {
+            this.state = CanvasStateEnum.RESIZING_OBJECT
+            this.resizeHandle = clickedHandle
+            this.callbacks.onStateChange(this.state)
+            return true
+        }
+        return false
+    }
 
-    return distanceSquared <= 1 // Inside the ellipse
+    private handleSelectedShapeClick(coords: CanvasCoords, selectedShape: ShapeData): boolean {
+        if (isPointInShapeInterior(coords, selectedShape)) {
+            this.state = CanvasStateEnum.MOVING_OBJECT
+            this.dragOffset = {
+                x: coords.x - selectedShape.x,
+                y: coords.y - selectedShape.y
+            }
+            this.callbacks.onStateChange(this.state)
+            return true
+        }
+        return false
+    }
+
+    private handleShapeSelectionClick(coords: CanvasCoords, canvasState: CanvasState): boolean {
+        const shapes = canvasState.getAllShapes()
+        
+        // Check from top to bottom (reverse z-order)
+        for (let i = shapes.length - 1; i >= 0; i--) {
+            if (isPointInShape(coords, shapes[i])) {
+                // Select the shape
+                this.callbacks.onApplyOperation(CanvasState.selectShape(shapes[i].id))
+                
+                // Prepare for potential drag
+                this.state = CanvasStateEnum.MOVING_OBJECT
+                this.dragOffset = {
+                    x: coords.x - shapes[i].x,
+                    y: coords.y - shapes[i].y
+                }
+                this.callbacks.onStateChange(this.state)
+                return true
+            }
+        }
+        return false
+    }
+
+    private handleEmptySpaceClick(coords: CanvasCoords): void {
+        this.callbacks.onApplyOperation(CanvasState.deselectAll())
+        if (this.toolManager.hasActiveTool()) {
+            // Start creating new shape
+            this.startCreateShape(coords)
+        } else {
+            // Deselect all shapes
+            this.state = CanvasStateEnum.IDLE
+            this.callbacks.onStateChange(this.state)
+        }
+    }
+
+    private startCreateShape(coords: CanvasCoords): void {
+        const newShape = this.toolManager.createShape(coords)
+        if (newShape) {
+            this.state = CanvasStateEnum.CREATING_SHAPE
+            this.tempShape = newShape
+            this.callbacks.onStateChange(this.state)
+            this.callbacks.onUpdateTempShape(this.tempShape)
+        }
+    }
+
+    private handleCreateShapeMove(coords: CanvasCoords): void {
+        if (this.tempShape && this.startPoint) {
+            this.tempShape = this.toolManager.updateTempShape(
+                this.tempShape,
+                this.startPoint,
+                coords
+            )
+            this.callbacks.onUpdateTempShape(this.tempShape)
+        }
+    }
+
+    private handleMoveObjectMove(coords: CanvasCoords): void {
+        const selectedShape = this.getCanvasState().getSelectedShape()
+        if (selectedShape && this.dragOffset) {
+            const newX = coords.x - this.dragOffset.x
+            const newY = coords.y - this.dragOffset.y
+            
+            this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, {
+                x: newX,
+                y: newY
+            }))
+        }
+    }
+
+    private handleResizeObjectMove(coords: CanvasCoords): void {
+        const selectedShape = this.getCanvasState().getSelectedShape()
+        if (selectedShape && this.resizeHandle) {
+            const newDimensions = this.calculateResize(selectedShape, this.resizeHandle, coords)
+            this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, newDimensions))
+        }
+    }
+
+    private finishCreateShape(): void {
+        if (this.tempShape && this.toolManager.isShapeViable(this.tempShape)) {
+            this.callbacks.onApplyOperation(CanvasState.createShape(this.tempShape))
+        }
+    }
+
+    private calculateResize(
+        shape: ShapeData, 
+        handle: {type: string}, 
+        coords: CanvasCoords
+    ): Partial<ShapeData> {
+        const newDimensions: Partial<ShapeData> = {}
+
+        switch (handle.type) {
+            case 'top-left':
+                newDimensions.width = (shape.x + shape.width) - coords.x
+                newDimensions.height = (shape.y + shape.height) - coords.y
+                newDimensions.x = coords.x
+                newDimensions.y = coords.y
+                break
+
+            case 'top-right':
+                newDimensions.width = coords.x - shape.x
+                newDimensions.height = (shape.y + shape.height) - coords.y
+                newDimensions.y = coords.y
+                break
+
+            case 'bottom-right':
+                newDimensions.width = coords.x - shape.x
+                newDimensions.height = coords.y - shape.y
+                break
+
+            case 'bottom-left':
+                newDimensions.width = (shape.x + shape.width) - coords.x
+                newDimensions.height = coords.y - shape.y
+                newDimensions.x = coords.x
+                break
+
+            case 'top-middle':
+                newDimensions.height = (shape.y + shape.height) - coords.y
+                newDimensions.y = coords.y
+                break
+
+            case 'bottom-middle':
+                newDimensions.height = coords.y - shape.y
+                break
+
+            case 'middle-left':
+                newDimensions.width = (shape.x + shape.width) - coords.x
+                newDimensions.x = coords.x
+                break
+
+            case 'middle-right':
+                newDimensions.width = coords.x - shape.x
+                break
+            case 'start':
+                newDimensions.x = coords.x
+                newDimensions.y = coords.y
+                newDimensions.width = (shape.x + shape.width) - coords.x
+                newDimensions.height = (shape.y + shape.height) - coords.y
+                break
+            case 'end':
+                newDimensions.width = coords.x - shape.x
+                newDimensions.height = coords.y - shape.y
+                break
+        }
+
+        // Ensure minimum size
+        if (shape.type !== "line" && newDimensions.width !== undefined) {
+            newDimensions.width = Math.max(newDimensions.width, 15)
+        }
+
+        if (shape.type !== "line" && newDimensions.height !== undefined) {
+            newDimensions.height = Math.max(newDimensions.height, 15)
+        }
+
+        return newDimensions
+    }
+
+    private processKeyboardShortcut(e: KeyboardEvent): boolean {
+        // Ctrl+Z or Cmd+Z for undo
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+            this.callbacks.onUndo()
+            return true
+        }
+        
+        // Ctrl+Shift+Z or Ctrl+Y or Cmd+Shift+Z for redo
+        if (((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') || 
+            (e.ctrlKey && e.key === 'y')) {
+            this.callbacks.onRedo()
+            return true
+        }
+        
+        // Delete key to delete selected shape
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+            const selectedShape = this.getCanvasState().getSelectedShape()
+            if (selectedShape) {
+                this.callbacks.onApplyOperation(CanvasState.deleteShape(selectedShape.id))
+                return true
+            }
+        }
+
+        // Escape to clear tool selection
+        if (e.key === 'Escape') {
+            this.toolManager.clearTool()
+            this.callbacks.onApplyOperation(CanvasState.deselectAll())
+            return true
+        }
+
+        return false
+    }
+
+    private resetInteractionState(): void {
+        this.state = CanvasStateEnum.IDLE
+        this.dragOffset = null
+        this.resizeHandle = null
+        this.startPoint = null
+        this.tempShape = null
+        
+        this.callbacks.onStateChange(this.state)
+        this.callbacks.onUpdateTempShape(null)
+    }
+
+    private addEventListeners(): void {
+        this.canvas.addEventListener("mousedown", this.onMouseDown)
+        this.canvas.addEventListener("mousemove", this.onMouseMove)
+        this.canvas.addEventListener("mouseup", this.onMouseUp)
+        addEventListener("keydown", this.onKeyDown)
+    }
+
+    // Event handler wrappers to maintain 'this' context
+    private onMouseDown = (e: MouseEvent) => {
+        const coords = this.getCanvasCoordinates(e)
+        this.handleMouseDown(coords)
+    }
+
+    private onMouseMove = (e: MouseEvent) => {
+        const coords = this.getCanvasCoordinates(e)
+        this.handleMouseMove(coords)
+    }
+
+    private onMouseUp = () => {
+        this.handleMouseUp()
+    }
+
+    private onKeyDown = (e: KeyboardEvent) => {
+        this.handleKeyDown(e)
+    }
+
+    private getCanvasCoordinates(e: MouseEvent): CanvasCoords {
+        const rect = this.canvas.getBoundingClientRect()
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        }
+    }
 }

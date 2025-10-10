@@ -1,4 +1,4 @@
-import { getResizeHandles } from './interaction'
+import { getResizeHandles } from './selection'
 import {
     CircleData,
     HANDLE_SIZE,

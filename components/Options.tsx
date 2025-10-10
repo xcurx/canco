@@ -59,6 +59,7 @@ const Options = () => {
         >
             <ToggleGroupItem value="rectangle"><RectangleHorizontal/></ToggleGroupItem>
             <ToggleGroupItem value="circle"><CircleIcon/></ToggleGroupItem>   
+            <ToggleGroupItem value="line"><LineChartIcon/></ToggleGroupItem>
         </ToggleGroup>
         
         {/* Undo/Redo buttons */}
