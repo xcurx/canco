@@ -43,8 +43,14 @@ export class Renderer {
     }
 
     private applyOperation(operation: Operation): void {
+        console.log(this.getDebugInfo())
+        if (operation.type !== "DESELECT_ALL") {
+            this.historyManager.addOperation(operation)
+        } else if (this.canvasState.getSelectedShape() !== null) {
+            this.historyManager.addOperation(operation)
+        }
         this.canvasState = CanvasState.applyOperation(this.canvasState, operation)
-        this.historyManager.addOperation(operation)
+            
         this.render()
     }
 
@@ -158,7 +164,7 @@ export class Renderer {
             shapes: this.canvasState.getAllShapes().length,
             selectedShape: this.canvasState.getSelectedShape()?.id || null,
             interactionState: this.currentInteractionState,
-            // history: this.historyManager.getHistoryInfo(),
+            history: this.historyManager.getHistoryInfo(),
             // tool: this.toolManager.getToolConfig()
         }
     }

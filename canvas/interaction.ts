@@ -21,7 +21,7 @@ export type InteractionCallbacks = {
 }
 
 export class InteractionManager {
-     private state: CanvasStateEnum = CanvasStateEnum.IDLE
+    private state: CanvasStateEnum = CanvasStateEnum.IDLE
     
     // Interaction state
     private dragOffset: {x: number, y: number} | null = null
@@ -79,7 +79,6 @@ export class InteractionManager {
                 break
 
             case CanvasStateEnum.IDLE:
-                // Could add hover effects here in the future
                 break
         }
     }
@@ -149,13 +148,13 @@ export class InteractionManager {
     private handleShapeSelectionClick(coords: CanvasCoords, canvasState: CanvasState): boolean {
         const shapes = canvasState.getAllShapes()
         
-        // Check from top to bottom (reverse z-order)
+        // check from top to bottom (reverse z-order)
         for (let i = shapes.length - 1; i >= 0; i--) {
             if (isPointInShape(coords, shapes[i])) {
-                // Select the shape
+                // select the shape
                 this.callbacks.onApplyOperation(CanvasState.selectShape(shapes[i].id))
                 
-                // Prepare for potential drag
+                // prepare for potential drag
                 this.state = CanvasStateEnum.MOVING_OBJECT
                 this.dragOffset = {
                     x: coords.x - shapes[i].x,
@@ -171,10 +170,8 @@ export class InteractionManager {
     private handleEmptySpaceClick(coords: CanvasCoords): void {
         this.callbacks.onApplyOperation(CanvasState.deselectAll())
         if (this.toolManager.hasActiveTool()) {
-            // Start creating new shape
             this.startCreateShape(coords)
         } else {
-            // Deselect all shapes
             this.state = CanvasStateEnum.IDLE
             this.callbacks.onStateChange(this.state)
         }
@@ -352,7 +349,7 @@ export class InteractionManager {
         addEventListener("keydown", this.onKeyDown)
     }
 
-    // Event handler wrappers to maintain 'this' context
+    // event handler wrappers to maintain 'this' context
     private onMouseDown = (e: MouseEvent) => {
         const coords = this.getCanvasCoordinates(e)
         this.handleMouseDown(coords)

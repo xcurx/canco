@@ -71,4 +71,13 @@ export class HistoryManager {
         this.currentHistoryIndex = -1
         console.log("History cleared")
     }
+
+    getHistoryInfo(): {totalOperations: number, currentIndex: number, canUndo: boolean, canRedo: boolean} {
+        return {
+            totalOperations: this.operationHistory.length,
+            currentIndex: this.currentHistoryIndex,
+            canUndo: this.canUndo(),
+            canRedo: this.canRedo()
+        }
+    }
 }
