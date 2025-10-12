@@ -4,6 +4,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/xcurx/canco-backend/pkg/websocket"
+	"github.com/xcurx/canco-backend/internal/handlers"
 )
 
 func InitializeServer() *gin.Engine {
@@ -22,7 +23,10 @@ func InitializeServer() *gin.Engine {
 		})
 	})
 
-	r.GET("/ws/:canvasID", websocket.Connect)
-
+	api := r.Group("/api")
+	{
+		api.POST("/createRoom", handlers.CreateRoom)
+		api.GET("/join/:canvasID", websocket.Connect)
+	}
 	return r
 }

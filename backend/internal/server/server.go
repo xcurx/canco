@@ -1,7 +1,16 @@
 package server
 
-func Initialize() {
+import (
+	"github.com/xcurx/canco-backend/internal/types"
+)
+
+func Start() {
+	var ot = types.CreateShape
+	println(ot)
 	r := InitializeServer()
 
-	r.Run() // listen and serve on
+	err := r.Run() // listen and serve on
+	if err != nil {
+		panic(err)
+	}
 }
