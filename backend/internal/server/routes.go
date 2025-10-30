@@ -26,7 +26,7 @@ func InitializeServer() *gin.Engine {
 	api := r.Group("/api")
 	{
 		api.POST("/createRoom", handlers.CreateRoom)
-		api.GET("/join/:canvasID", websocket.Connect)
+		api.GET("/join/:canvasID", websocketPkg.Connect)
 	}
 	return r
 }

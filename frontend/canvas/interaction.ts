@@ -42,7 +42,7 @@ export class InteractionManager {
         this.startPoint = coords
         const canvasState = this.getCanvasState()
         
-        console.log("Mouse down", this.state, this.toolManager.getCurrentTool())
+        // console.log("Mouse down", this.state, this.toolManager.getCurrentTool())
 
         // Priority 1: Check for handle clicks on selected shape (highest priority)
         const selectedShape = canvasState.getSelectedShape()

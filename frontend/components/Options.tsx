@@ -70,6 +70,9 @@ const Options = () => {
             <Button variant="outline" size="sm" onClick={handleRedo} disabled={!renderer || !renderer.canRedo()}>
                 <Redo className="w-4 h-4" />
             </Button>
+            <Button variant="outline" size="sm" onClick={() => renderer?.initializeSocket("ws:localhost:8080/api/join/12")}>
+                Join
+            </Button>
         </div>
     </div>
   )

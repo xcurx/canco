@@ -26,6 +26,8 @@ export class CanvasState {
     static applyOperation(currentState: CanvasState, operation: Operation): CanvasState {
         const newShapes = new Map(currentState.shapes)
         let newSelectId = currentState.selectedShapeId
+        if (!operation) return currentState
+        console.log("Applying operation in CanvasState:", operation)
 
         switch (operation.type) {
             case 'CREATE_SHAPE': {

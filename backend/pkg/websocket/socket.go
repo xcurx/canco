@@ -1,4 +1,4 @@
-package websocket
+package websocketPkg
 
 import (
 	"log"
@@ -30,4 +30,12 @@ func Connect(c *gin.Context) {
 	log.Printf("Room ID: %s, Title: %s", room.ID, room.Title)
 
 	room.AddUser(conn)
+
+	HandleEvents(conn, room);
+
+	defer func() {
+		// room.RemoveUser()
+		conn.Close()
+		log.Println("WebSocket connection closed for canvas ID:", roomID)
+	}()
 }

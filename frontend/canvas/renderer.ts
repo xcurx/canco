@@ -4,6 +4,7 @@ import { renderShape } from './renderShapes'
 import { HistoryManager } from './history'
 import { ToolManager } from './tools'
 import { InteractionManager, InteractionCallbacks } from './interaction'
+import { Socket, Message } from '../websocket/socket'
 
 export class Renderer {
     private ctx: CanvasRenderingContext2D
@@ -18,7 +19,9 @@ export class Renderer {
     private tempShape: ShapeData | null = null
     private currentInteractionState: CanvasStateEnum = CanvasStateEnum.IDLE
 
-    constructor(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+    private socket: Socket | null = null
+
+    constructor(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, url: string) {
         this.ctx = ctx
         this.canvas = canvas
         
@@ -36,27 +39,63 @@ export class Renderer {
             () => this.canvasState,
             this.toolManager
         )
-        
+
+        if (url) {
+            this.socket = new Socket(url, {
+                onOpen: () => {
+                    console.log('WebSocket connection opened')
+                },
+                onMessage: (msg) => {
+                    console.log('Received message:', msg)
+                    this.onMessage(msg)
+                }
+            })
+        }
+
         this.render()
         
         addEventListener("resize", this.handleResize)   
     }
 
-    private applyOperation(operation: Operation): void {
+    private applyOperation(operation: Operation, isSocket = false): void {
         console.log(this.getDebugInfo())
+
+        if (isSocket) {
+            this.canvasState = CanvasState.applyOperation(this.canvasState, operation)
+            this.render()
+            return
+        }
+
         if (operation.type !== "DESELECT_ALL") {
             this.historyManager.addOperation(operation)
         } else if (this.canvasState.getSelectedShape() !== null) {
             this.historyManager.addOperation(operation)
         }
+        console.log("Applying operation:", operation)
+        this.socket?.sendMessage("operation", operation)
         this.canvasState = CanvasState.applyOperation(this.canvasState, operation)
             
         this.render()
     }
 
+    initializeSocket(url: string): void {
+        if (!this.socket) {
+            this.socket = new Socket(url, {
+                onOpen: () => {
+                    console.log('WebSocket connection opened')
+                },
+                onMessage: (msg) => {
+                    console.log('Received message:', msg)
+                    this.onMessage(msg)
+                }
+            })
+            this.socket.onMessage()
+        }
+    }
+
     private handleStateChange(state: CanvasStateEnum): void {
         this.currentInteractionState = state
-        console.log("Interaction state changed to:", state)
+        // console.log("Interaction state changed to:", state)
         
         this.updateCursor(state)
     }
@@ -204,6 +243,11 @@ export class Renderer {
         this.ctx.canvas.width = innerWidth
         this.ctx.canvas.height = innerHeight
         this.render()
+    }
+
+    private onMessage = (msg: Message): void => {
+        console.log('Received message:', msg)
+        this.applyOperation(msg.data, true)
     }
 
     animate = (): void => {
