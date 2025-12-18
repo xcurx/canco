@@ -29,6 +29,8 @@ export class HistoryManager {
             this.operationHistory.shift()
             this.currentHistoryIndex--
         }
+
+        console.log("History index is",this.currentHistoryIndex)
     }
 
     undo(): CanvasState | null {
@@ -56,6 +58,10 @@ export class HistoryManager {
         }
 
         return { state, operation }
+    }
+
+    getCurrentHistoryIndex(): number {
+        return this.currentHistoryIndex
     }
 
     canUndo(): boolean {

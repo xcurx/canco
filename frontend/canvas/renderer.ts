@@ -27,7 +27,7 @@ export class Renderer {
         
         const callbacks: InteractionCallbacks = {
             onStateChange: (state) => this.handleStateChange(state),
-            onApplyOperation: (operation) => this.applyOperation(operation),
+            onApplyOperation: (operation, saveToHistory) => this.applyOperation(operation, false, saveToHistory),
             onUpdateTempShape: (shape) => this.updateTempShape(shape),
             onUndo: () => this.undo(),
             onRedo: () => this.redo()
@@ -57,7 +57,7 @@ export class Renderer {
         addEventListener("resize", this.handleResize)   
     }
 
-    private applyOperation(operation: Operation, isSocket = false): void {
+    private applyOperation(operation: Operation, isSocket = false, saveToHistory=false): void {
         console.log(this.getDebugInfo())
 
         if (isSocket) {
@@ -66,13 +66,18 @@ export class Renderer {
             return
         }
 
-        if (operation.type !== "DESELECT_ALL") {
-            this.historyManager.addOperation(operation)
-        } else if (this.canvasState.getSelectedShape() !== null) {
-            this.historyManager.addOperation(operation)
+        if (saveToHistory) {
+            console.log("Saving to history", operation)
+            if (operation.type !== "DESELECT_ALL") {
+                this.historyManager.addOperation(operation)
+                this.socket?.sendMessage("operation", operation)
+            } else if (this.canvasState.getSelectedShape() !== null) {
+                this.historyManager.addOperation(operation)
+                this.socket?.sendMessage("operation", operation)
+            }
         }
+
         console.log("Applying operation:", operation)
-        this.socket?.sendMessage("operation", operation)
         this.canvasState = CanvasState.applyOperation(this.canvasState, operation)
             
         this.render()
@@ -148,10 +153,12 @@ export class Renderer {
     }
 
     undo(): boolean {
+        const index = this.historyManager.getCurrentHistoryIndex()
         const newState = this.historyManager.undo()
         if (newState) {
             this.canvasState = newState
             this.render()
+            this.socket?.sendMessage("undo", index)
             console.log("Undo successful")
             return true
         }

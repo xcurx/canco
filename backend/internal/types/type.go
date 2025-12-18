@@ -13,6 +13,12 @@ type User struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 	Conn *websocket.Conn
+	UserState
+}
+
+type UserState struct {
+	Operation []Operation `json:"operations"`
+	Selected  string      `json:"selected"`
 }
 
 type Room struct {
@@ -25,7 +31,6 @@ type Room struct {
 
 type RoomState struct {
 	Shapes     []Shape     `json:"shapes"`
-	Operations []Operation `json:"operations"`
 }
 
 type RoomManager struct {
@@ -112,7 +117,7 @@ func (ot *OperationType) UnmarshalJSON(b []byte) error {
 }
 
 func (ot OperationType) MarshalJSON() ([]byte, error) {
-	s := ot.String() 
+	s := ot.String()
 	return json.Marshal(s)
 }
 

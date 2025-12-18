@@ -9,7 +9,7 @@ import (
 )
 
 
-func HandleEvents(conn *websocket.Conn, room *types.Room) {
+func HandleEvents(conn *websocket.Conn, room *types.Room, userID string) {
 	log.Println("Starting event handler for room ID:", room.ID)
 	for {
 		_, message, err := conn.ReadMessage()
@@ -28,7 +28,11 @@ func HandleEvents(conn *websocket.Conn, room *types.Room) {
 		switch event.Type {
 		case "operation":
 			log.Println("Handling operation event")
-			HandleOperation(event.Data, room)
+			HandleOperation(event.Data, room, userID)
+
+		case "undo": 
+			log.Println("Handling undo event")
+			HandleUndo(event.Data, room, userID)
 		}
 	}
 }

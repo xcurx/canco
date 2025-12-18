@@ -7,7 +7,7 @@ import (
 	"github.com/xcurx/canco-backend/internal/types"
 )
 
-func createShape(op types.Operation, room *types.Room) {
+func createShape(op types.Operation, room *types.Room, userID string) {
 	operationData, ok := op.Data.(map[string]interface{})
 	if !ok {
 		log.Println("Invalid shape data")
@@ -42,14 +42,20 @@ func createShape(op types.Operation, room *types.Room) {
 	}
 
 	room.Mutex.Lock()
-	room.RoomState.Operations = append(room.RoomState.Operations, op)
+	// for i, user := range room.Users {
+	// 	if user.ID == userID {
+	// 		room.Users[i].UserState.Operation = append(room.Users[i].UserState.Operation, op)
+	// 		break
+	// 	}
+	// }
 	room.RoomState.Shapes = append(room.RoomState.Shapes, shape)
 	room.Mutex.Unlock()
 	log.Printf("Shape created: %+v", shape)
 	room.BroadcastEvent("CREATE_SHAPE", op)
 }
 
-func updateShape(op types.Operation, room *types.Room) {
+func updateShape(op types.Operation, room *types.Room, userID string) {
+	log.Println("The user id is: ", userID)
 	operationData, ok := op.Data.(map[string]interface{})
 	if !ok {
 		log.Println("Invalid shape data")
@@ -96,7 +102,16 @@ func updateShape(op types.Operation, room *types.Room) {
 	shapeId := data.ID
 
 	room.Mutex.Lock()
-	room.RoomState.Operations = append(room.RoomState.Operations, op)
+
+	// for i, user := range room.Users {
+	// 	if user.ID == userID {
+	// 		room.Users[i].UserState.Operation = append(room.Users[i].UserState.Operation, op)
+	// 		log.Println(user.UserState.Operation)
+	// 		break
+	// 	}
+	// }
+
+
 	for i, shape := range room.RoomState.Shapes {
 		if shape.ID == shapeId {
 			if changes.X != nil {
@@ -119,12 +134,13 @@ func updateShape(op types.Operation, room *types.Room) {
 			break
 		}
 	}
+
 	room.Mutex.Unlock()
 	log.Printf("Shape updated: %+v", op.Data)
 	room.BroadcastEvent("UPDATE_SHAPE", op)
 }
 
-func deleteShape(op types.Operation, room *types.Room) {
+func deleteShape(op types.Operation, room *types.Room, userID string) {
     operationData, ok := op.Data.(map[string]interface{})
 	if !ok {
 		log.Println("Invalid shape data")
@@ -144,13 +160,21 @@ func deleteShape(op types.Operation, room *types.Room) {
 	shapeId := unmarshalledOPData.(map[string]interface{})["id"].(string)
 
 	room.Mutex.Lock()
-	room.RoomState.Operations = append(room.RoomState.Operations, op)
+ 
+	// for i, user := range room.Users {
+	// 	if user.ID == userID {
+	// 		room.Users[i].UserState.Operation = append(room.Users[i].UserState.Operation, op)
+	// 		break
+	// 	}
+	// }
+
 	for i, shape := range room.RoomState.Shapes {
 		if shape.ID == shapeId {
 			room.RoomState.Shapes = append(room.RoomState.Shapes[:i], room.RoomState.Shapes[i+1:]...)
 			break
 		}
 	}
+
 	room.Mutex.Unlock()
 	log.Printf("Shape deleted: %+v", op.Data)
 	room.BroadcastEvent("DELETE_SHAPE", op)

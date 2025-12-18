@@ -14,7 +14,7 @@ import { ToolManager } from './tools'
 
 export type InteractionCallbacks = {
     onStateChange: (state: CanvasStateEnum) => void
-    onApplyOperation: (operation: Operation) => void
+    onApplyOperation: (operation: Operation, saveToHistory:boolean) => void
     onUpdateTempShape: (shape: ShapeData | null) => void
     onUndo: () => void
     onRedo: () => void
@@ -83,15 +83,18 @@ export class InteractionManager {
         }
     }
 
-    handleMouseUp(): void {
+    handleMouseUp(coords: CanvasCoords): void {
         switch (this.state) {
             case CanvasStateEnum.CREATING_SHAPE:
                 this.finishCreateShape()
                 break
 
             case CanvasStateEnum.MOVING_OBJECT:
+                this.finishMoveShape(coords)
+                break
+
             case CanvasStateEnum.RESIZING_OBJECT:
-                // Operations were applied during mouse move, just reset state
+                this.finishResizeShape(coords)
                 break
         }
 
@@ -152,7 +155,7 @@ export class InteractionManager {
         for (let i = shapes.length - 1; i >= 0; i--) {
             if (isPointInShape(coords, shapes[i])) {
                 // select the shape
-                this.callbacks.onApplyOperation(CanvasState.selectShape(shapes[i].id))
+                this.callbacks.onApplyOperation(CanvasState.selectShape(shapes[i].id), true)
                 
                 // prepare for potential drag
                 this.state = CanvasStateEnum.MOVING_OBJECT
@@ -168,7 +171,7 @@ export class InteractionManager {
     }
 
     private handleEmptySpaceClick(coords: CanvasCoords): void {
-        this.callbacks.onApplyOperation(CanvasState.deselectAll())
+        this.callbacks.onApplyOperation(CanvasState.deselectAll(), true)
         if (this.toolManager.hasActiveTool()) {
             this.startCreateShape(coords)
         } else {
@@ -207,7 +210,7 @@ export class InteractionManager {
             this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, {
                 x: newX,
                 y: newY
-            }))
+            }), false)
         }
     }
 
@@ -215,13 +218,34 @@ export class InteractionManager {
         const selectedShape = this.getCanvasState().getSelectedShape()
         if (selectedShape && this.resizeHandle) {
             const newDimensions = this.calculateResize(selectedShape, this.resizeHandle, coords)
-            this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, newDimensions))
+            this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, newDimensions), false)
         }
     }
 
     private finishCreateShape(): void {
         if (this.tempShape && this.toolManager.isShapeViable(this.tempShape)) {
-            this.callbacks.onApplyOperation(CanvasState.createShape(this.tempShape))
+            this.callbacks.onApplyOperation(CanvasState.createShape(this.tempShape), true)
+        }
+    }
+
+    private finishMoveShape(coords: CanvasCoords): void {
+        const selectedShape = this.getCanvasState().getSelectedShape()
+        if (selectedShape && this.dragOffset) {
+            const newX = coords.x - this.dragOffset.x
+            const newY = coords.y - this.dragOffset.y
+            
+            this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, {
+                x: newX,
+                y: newY
+            }), true)
+        }
+    }
+
+    private finishResizeShape(coords: CanvasCoords): void {
+        const selectedShape = this.getCanvasState().getSelectedShape()
+        if (selectedShape && this.resizeHandle) {
+            const newDimensions = this.calculateResize(selectedShape, this.resizeHandle, coords)
+            this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, newDimensions), true)
         }
     }
 
@@ -316,7 +340,7 @@ export class InteractionManager {
         if (e.key === 'Delete' || e.key === 'Backspace') {
             const selectedShape = this.getCanvasState().getSelectedShape()
             if (selectedShape) {
-                this.callbacks.onApplyOperation(CanvasState.deleteShape(selectedShape.id))
+                this.callbacks.onApplyOperation(CanvasState.deleteShape(selectedShape.id), true)
                 return true
             }
         }
@@ -324,7 +348,7 @@ export class InteractionManager {
         // Escape to clear tool selection
         if (e.key === 'Escape') {
             this.toolManager.clearTool()
-            this.callbacks.onApplyOperation(CanvasState.deselectAll())
+            this.callbacks.onApplyOperation(CanvasState.deselectAll(), true)
             return true
         }
 
@@ -360,8 +384,9 @@ export class InteractionManager {
         this.handleMouseMove(coords)
     }
 
-    private onMouseUp = () => {
-        this.handleMouseUp()
+    private onMouseUp = (e: MouseEvent) => {
+        const coords = this.getCanvasCoordinates(e)
+        this.handleMouseUp(coords)
     }
 
     private onKeyDown = (e: KeyboardEvent) => {

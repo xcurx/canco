@@ -31,7 +31,6 @@ func (rm *RoomManager) GetOrCreateRoom(roomID string) *Room {
 
 	roomState := RoomState{
 		Shapes:     []Shape{},
-		Operations: []Operation{},
 	}
 
 	room := &Room{
@@ -44,18 +43,23 @@ func (rm *RoomManager) GetOrCreateRoom(roomID string) *Room {
 	return room
 }
 
-func (r *Room) AddUser(conn *websocket.Conn) {
+func (r *Room) AddUser(conn *websocket.Conn) string {
     r.Mutex.Lock()
 	defer r.Mutex.Unlock()
 
 	user := User{
 		ID:   uuid.New().String(),
 		Name: "Anonymous",
+		UserState: UserState{
+			Operation: make([]Operation, 0),
+			Selected:  "",
+		},
 		Conn: conn,
 	}
 
 	r.Users = append(r.Users, user)
 	log.Printf("User %s joined room %s", user.ID, r.ID)
+	return user.ID
 }
 
 func (r *Room) RemoveUser(id string) {
