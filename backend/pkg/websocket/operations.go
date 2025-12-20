@@ -24,12 +24,17 @@ func createShape(op types.Operation, room *types.Room, userID string) {
 		return
 	}
 
-	shapeObj, ok := unmarshalledOPData.(map[string]interface{})
+	dataMap, ok := unmarshalledOPData.(map[string]interface{})
 	if !ok {
-		log.Println("Invalid shape data after unmarshalling")
+		log.Println("Invalid data map after unmarshalling")
 		return
 	}
-
+	// The shape is nested inside data.shape
+	shapeObj, ok := dataMap["shape"].(map[string]interface{})
+	if !ok {
+		log.Println("Invalid shape data - 'shape' key not found or wrong type")
+		return
+	}
 	shapeBytes, err := json.Marshal(shapeObj)
 	if err != nil {
 		log.Println("Marshal error:", err)
@@ -129,7 +134,9 @@ func updateShape(op types.Operation, room *types.Room, userID string) {
 			if changes.Color != nil {
 				shape.Color = *changes.Color
 			}
-			shape.IsSelected = *changes.IsSelected
+			if changes.IsSelected != nil {
+				shape.IsSelected = *changes.IsSelected
+			}
 			room.RoomState.Shapes[i] = shape
 			break
 		}

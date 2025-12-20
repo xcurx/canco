@@ -19,6 +19,8 @@ type User struct {
 type UserState struct {
 	Operation []Operation `json:"operations"`
 	Selected  string      `json:"selected"`
+	UndoStack []int       `json:"undoStack"`
+	RedoStack []int       `json:"redoStack"`
 }
 
 type Room struct {
@@ -31,6 +33,7 @@ type Room struct {
 
 type RoomState struct {
 	Shapes     []Shape     `json:"shapes"`
+	History    []Operation `json:"history"`
 }
 
 type RoomManager struct {
@@ -66,6 +69,7 @@ type Operation struct {
 	Type      OperationType `json:"type"`
 	Timestamp int64         `json:"timestamp"`
 	Data      interface{}   `json:"data"`
+	Inverse   *Operation    `json:"inverse,omitempty"`
 }
 
 type OperationType int

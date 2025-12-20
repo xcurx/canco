@@ -31,6 +31,7 @@ func (rm *RoomManager) GetOrCreateRoom(roomID string) *Room {
 
 	roomState := RoomState{
 		Shapes:     []Shape{},
+		History:    []Operation{},
 	}
 
 	room := &Room{
@@ -53,6 +54,8 @@ func (r *Room) AddUser(conn *websocket.Conn) string {
 		UserState: UserState{
 			Operation: make([]Operation, 0),
 			Selected:  "",
+			UndoStack: make([]int, 0),
+			RedoStack: make([]int, 0),
 		},
 		Conn: conn,
 	}

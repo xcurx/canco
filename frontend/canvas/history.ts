@@ -1,30 +1,27 @@
-import { Operation } from './type'
+import { CreateShapeOperation, DeleteShapeOperation, Operation, ShapeData, UpdateShapeOperation } from './type'
 import { CanvasState } from './state'
 
 export class HistoryManager {
     private operationHistory: Operation[] = []
     private currentHistoryIndex = -1
     private maxHistorySize = 50
+    private getCanvasState: () => CanvasState
 
-    addToHistory(operation: Operation) {
-        this.operationHistory = this.operationHistory.slice(0, this.currentHistoryIndex + 1)
-        this.operationHistory.push(operation)
-        if (this.operationHistory.length > this.maxHistorySize) {
-            this.operationHistory.shift()
-        } else {
-            this.currentHistoryIndex++
-        }
+    constructor(getCanvasState: () => CanvasState) {
+        this.getCanvasState = getCanvasState
     }
 
     addOperation(operation: Operation): void {
-        // Remove any operations after current index
+        operation.inverse = this.computeInverse(operation)
+
+        // remove any operations after current index
         this.operationHistory = this.operationHistory.slice(0, this.currentHistoryIndex + 1)
         
-        // Add new operation
+        // add new operation
         this.operationHistory.push(operation)
         this.currentHistoryIndex++
         
-        // Limit history size
+        // limit history size
         if (this.operationHistory.length > this.maxHistorySize) {
             this.operationHistory.shift()
             this.currentHistoryIndex--
@@ -33,17 +30,21 @@ export class HistoryManager {
         console.log("History index is",this.currentHistoryIndex)
     }
 
-    undo(): CanvasState | null {
+    undo(): { state: CanvasState; inverseOp: Operation } | null {
         if (this.currentHistoryIndex < 0) return null
 
-        let state = new CanvasState()
+        const operation = this.operationHistory[this.currentHistoryIndex]
 
+        let state = new CanvasState()
         for (let i = 0; i < this.currentHistoryIndex; i++) {
             state = CanvasState.applyOperation(state, this.operationHistory[i])
         }
-        
         this.currentHistoryIndex--
-        return state
+        
+        return {
+            state,
+            inverseOp: operation.inverse!
+        }
     }
 
     redo(): {state: CanvasState, operation: Operation} | null {
@@ -84,6 +85,95 @@ export class HistoryManager {
             currentIndex: this.currentHistoryIndex,
             canUndo: this.canUndo(),
             canRedo: this.canRedo()
+        }
+    }
+
+    private computeInverse(op: Operation): Operation {
+        const state = this.getCanvasState()
+        
+        switch (op.type) {
+            case "CREATE_SHAPE": {
+                const createOp = op as CreateShapeOperation
+                return {
+                    id: crypto.randomUUID(),
+                    type: "DELETE_SHAPE",
+                    timestamp: Date.now(),
+                    data: { id: createOp.data.shape.id }
+                }
+            }
+
+            case "DELETE_SHAPE": {
+                const deleteOp = op as DeleteShapeOperation
+                const deletedShape = state.getShape(deleteOp.data.id)
+                return {
+                    id: crypto.randomUUID(),
+                    type: 'CREATE_SHAPE',
+                    timestamp: Date.now(),
+                    data: { shape: deletedShape }
+                }
+            }
+
+            case 'UPDATE_SHAPE': {
+                const updateOp = op as UpdateShapeOperation
+                const currentShape = state.getShape(updateOp.data.id)
+                if (!currentShape) {
+                    // Fallback: return a no-op inverse
+                    return op
+                }
+
+                // Capture the current values for properties being changed
+                const previousValues: Partial<ShapeData> = {}
+                for (const key of Object.keys(updateOp.data.changes) as (keyof ShapeData)[]) {
+                    previousValues[key] = currentShape[key] as any
+                }
+
+                return {
+                    id: crypto.randomUUID(),
+                    type: 'UPDATE_SHAPE',
+                    timestamp: Date.now(),
+                    data: { id: updateOp.data.id, changes: previousValues }
+                }
+            }
+
+            case 'SELECT_SHAPE': {
+                const selectedShape = state.getSelectedShape()
+                if (!selectedShape) {
+                    return {
+                        id: crypto.randomUUID(),
+                        type: 'DESELECT_ALL',
+                        timestamp: Date.now(),
+                        data: {}
+                    }
+                }
+                return {
+                    id: crypto.randomUUID(),
+                    type: 'SELECT_SHAPE',
+                    timestamp: Date.now(),
+                    data: { id: selectedShape.id }
+                }
+            }
+
+            case 'DESELECT_ALL': {
+                const selectedShape = state.getSelectedShape()
+                if (!selectedShape) {
+                    return {
+                        id: crypto.randomUUID(),
+                        type: 'DESELECT_ALL',
+                        timestamp: Date.now(),
+                        data: {}
+                    }
+                }
+                return {
+                    id: crypto.randomUUID(),
+                    type: 'SELECT_SHAPE',
+                    timestamp: Date.now(),
+                    data: { id: selectedShape.id }
+                }
+            }
+
+            default: {
+                return op
+            }
         }
     }
 }

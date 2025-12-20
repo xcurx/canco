@@ -12,8 +12,8 @@ export class Renderer {
     
     private canvasState: CanvasState = new CanvasState()
     
-    private historyManager = new HistoryManager()
-    private toolManager = new ToolManager()
+    private historyManager: HistoryManager
+    private toolManager: ToolManager = new ToolManager()
     private interactionManager: InteractionManager
     
     private tempShape: ShapeData | null = null
@@ -33,6 +33,7 @@ export class Renderer {
             onRedo: () => this.redo()
         }
         
+        this.historyManager = new HistoryManager(() => this.canvasState)
         this.interactionManager = new InteractionManager(
             canvas,
             callbacks,
@@ -153,12 +154,11 @@ export class Renderer {
     }
 
     undo(): boolean {
-        const index = this.historyManager.getCurrentHistoryIndex()
-        const newState = this.historyManager.undo()
-        if (newState) {
-            this.canvasState = newState
+        const result = this.historyManager.undo()
+        if (result) {
+            this.canvasState = result.state
             this.render()
-            this.socket?.sendMessage("undo", index)
+            this.socket?.sendMessage("undo", null)
             console.log("Undo successful")
             return true
         }
