@@ -11,8 +11,8 @@ export class HistoryManager {
         this.getCanvasState = getCanvasState
     }
 
-    addOperation(operation: Operation): void {
-        operation.inverse = this.computeInverse(operation)
+    addOperation(operation: Operation, originalShape?: ShapeData): void {
+        operation.inverse = this.computeInverse(operation, originalShape)
 
         // remove any operations after current index
         this.operationHistory = this.operationHistory.slice(0, this.currentHistoryIndex + 1)
@@ -35,15 +35,17 @@ export class HistoryManager {
 
         const operation = this.operationHistory[this.currentHistoryIndex]
 
-        let state = new CanvasState()
-        for (let i = 0; i < this.currentHistoryIndex; i++) {
-            state = CanvasState.applyOperation(state, this.operationHistory[i])
+        if (!operation.inverse) {
+            console.log("No inverse for operation, cannot undo")
+            return null
         }
+
+        const state = CanvasState.applyOperation(this.getCanvasState(), operation.inverse)
         this.currentHistoryIndex--
         
         return {
             state,
-            inverseOp: operation.inverse!
+            inverseOp: operation.inverse
         }
     }
 
@@ -53,11 +55,7 @@ export class HistoryManager {
         this.currentHistoryIndex++
         const operation = this.operationHistory[this.currentHistoryIndex]
         
-        let state = new CanvasState()
-        for (let i = 0; i <= this.currentHistoryIndex; i++) {
-            state = CanvasState.applyOperation(state, this.operationHistory[i])
-        }
-
+        const state = CanvasState.applyOperation(this.getCanvasState(), operation)
         return { state, operation }
     }
 
@@ -88,7 +86,7 @@ export class HistoryManager {
         }
     }
 
-    private computeInverse(op: Operation): Operation {
+    private computeInverse(op: Operation, originalShape?: ShapeData): Operation {
         const state = this.getCanvasState()
         
         switch (op.type) {
@@ -115,7 +113,7 @@ export class HistoryManager {
 
             case 'UPDATE_SHAPE': {
                 const updateOp = op as UpdateShapeOperation
-                const currentShape = state.getShape(updateOp.data.id)
+                const currentShape = originalShape ?? state.getShape(updateOp.data.id)
                 if (!currentShape) {
                     // Fallback: return a no-op inverse
                     return op

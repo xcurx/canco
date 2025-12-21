@@ -14,7 +14,7 @@ import { ToolManager } from './tools'
 
 export type InteractionCallbacks = {
     onStateChange: (state: CanvasStateEnum) => void
-    onApplyOperation: (operation: Operation, saveToHistory:boolean) => void
+    onApplyOperation: (operation: Operation, saveToHistory:boolean, originalShape?: ShapeData) => void
     onUpdateTempShape: (shape: ShapeData | null) => void
     onUndo: () => void
     onRedo: () => void
@@ -28,6 +28,7 @@ export class InteractionManager {
     private resizeHandle: {x: number, y: number, type: string} | null = null
     private startPoint: {x: number, y: number} | null = null
     private tempShape: ShapeData | null = null
+    private originalShape: ShapeData | null = null
 
     constructor(
         private canvas: HTMLCanvasElement,
@@ -129,6 +130,7 @@ export class InteractionManager {
         if (clickedHandle) {
             this.state = CanvasStateEnum.RESIZING_OBJECT
             this.resizeHandle = clickedHandle
+            this.originalShape = { ...selectedShape }
             this.callbacks.onStateChange(this.state)
             return true
         }
@@ -142,6 +144,7 @@ export class InteractionManager {
                 x: coords.x - selectedShape.x,
                 y: coords.y - selectedShape.y
             }
+            this.originalShape = { ...selectedShape }
             this.callbacks.onStateChange(this.state)
             return true
         }
@@ -163,6 +166,7 @@ export class InteractionManager {
                     x: coords.x - shapes[i].x,
                     y: coords.y - shapes[i].y
                 }
+                this.originalShape = { ...shapes[i] }
                 this.callbacks.onStateChange(this.state)
                 return true
             }
@@ -237,7 +241,7 @@ export class InteractionManager {
             this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, {
                 x: newX,
                 y: newY
-            }), true)
+            }), true, this.originalShape ?? undefined)
         }
     }
 
@@ -245,7 +249,7 @@ export class InteractionManager {
         const selectedShape = this.getCanvasState().getSelectedShape()
         if (selectedShape && this.resizeHandle) {
             const newDimensions = this.calculateResize(selectedShape, this.resizeHandle, coords)
-            this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, newDimensions), true)
+            this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, newDimensions), true, this.originalShape ?? undefined)
         }
     }
 
@@ -361,6 +365,7 @@ export class InteractionManager {
         this.resizeHandle = null
         this.startPoint = null
         this.tempShape = null
+        this.originalShape = null
         
         this.callbacks.onStateChange(this.state)
         this.callbacks.onUpdateTempShape(null)

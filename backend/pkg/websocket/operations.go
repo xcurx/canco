@@ -47,12 +47,6 @@ func createShape(op types.Operation, room *types.Room, userID string) {
 	}
 
 	room.Mutex.Lock()
-	// for i, user := range room.Users {
-	// 	if user.ID == userID {
-	// 		room.Users[i].UserState.Operation = append(room.Users[i].UserState.Operation, op)
-	// 		break
-	// 	}
-	// }
 	room.RoomState.Shapes = append(room.RoomState.Shapes, shape)
 	room.Mutex.Unlock()
 	log.Printf("Shape created: %+v", shape)
@@ -79,7 +73,7 @@ func updateShape(op types.Operation, room *types.Room, userID string) {
 
 	type opData struct {
 		ID    string             `json:"id"`
-		Shape types.PartialShape `json:"shape"`
+		Changes types.PartialShape `json:"changes"`
 	}
 
 	var data opData
@@ -94,7 +88,7 @@ func updateShape(op types.Operation, room *types.Room, userID string) {
 	}
 
 	var changes types.PartialShape
-	changesBytes, err := json.Marshal(data.Shape)
+	changesBytes, err := json.Marshal(data.Changes)
 	if err != nil {
 		log.Println("Marshal error:", err)
 		return
@@ -107,15 +101,6 @@ func updateShape(op types.Operation, room *types.Room, userID string) {
 	shapeId := data.ID
 
 	room.Mutex.Lock()
-
-	// for i, user := range room.Users {
-	// 	if user.ID == userID {
-	// 		room.Users[i].UserState.Operation = append(room.Users[i].UserState.Operation, op)
-	// 		log.Println(user.UserState.Operation)
-	// 		break
-	// 	}
-	// }
-
 
 	for i, shape := range room.RoomState.Shapes {
 		if shape.ID == shapeId {
@@ -168,13 +153,6 @@ func deleteShape(op types.Operation, room *types.Room, userID string) {
 
 	room.Mutex.Lock()
  
-	// for i, user := range room.Users {
-	// 	if user.ID == userID {
-	// 		room.Users[i].UserState.Operation = append(room.Users[i].UserState.Operation, op)
-	// 		break
-	// 	}
-	// }
-
 	for i, shape := range room.RoomState.Shapes {
 		if shape.ID == shapeId {
 			room.RoomState.Shapes = append(room.RoomState.Shapes[:i], room.RoomState.Shapes[i+1:]...)

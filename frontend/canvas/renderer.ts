@@ -27,7 +27,7 @@ export class Renderer {
         
         const callbacks: InteractionCallbacks = {
             onStateChange: (state) => this.handleStateChange(state),
-            onApplyOperation: (operation, saveToHistory) => this.applyOperation(operation, false, saveToHistory),
+            onApplyOperation: (operation, saveToHistory, originalShape) => this.applyOperation(operation, false, saveToHistory, originalShape),
             onUpdateTempShape: (shape) => this.updateTempShape(shape),
             onUndo: () => this.undo(),
             onRedo: () => this.redo()
@@ -58,7 +58,7 @@ export class Renderer {
         addEventListener("resize", this.handleResize)   
     }
 
-    private applyOperation(operation: Operation, isSocket = false, saveToHistory=false): void {
+    private applyOperation(operation: Operation, isSocket = false, saveToHistory=false, originalShape?: ShapeData): void {
         console.log(this.getDebugInfo())
 
         if (isSocket) {
@@ -70,10 +70,10 @@ export class Renderer {
         if (saveToHistory) {
             console.log("Saving to history", operation)
             if (operation.type !== "DESELECT_ALL") {
-                this.historyManager.addOperation(operation)
+                this.historyManager.addOperation(operation, originalShape)
                 this.socket?.sendMessage("operation", operation)
             } else if (this.canvasState.getSelectedShape() !== null) {
-                this.historyManager.addOperation(operation)
+                this.historyManager.addOperation(operation, originalShape)
                 this.socket?.sendMessage("operation", operation)
             }
         }
@@ -156,9 +156,12 @@ export class Renderer {
     undo(): boolean {
         const result = this.historyManager.undo()
         if (result) {
-            this.canvasState = result.state
-            this.render()
-            this.socket?.sendMessage("undo", null)
+            if (this.socket?.conn.readyState === WebSocket.OPEN) {
+                this.socket.sendMessage("undo", null)
+            } else {
+                this.canvasState = result.state
+                this.render()
+            }
             console.log("Undo successful")
             return true
         }
@@ -169,8 +172,12 @@ export class Renderer {
     redo(): boolean {
         const result = this.historyManager.redo()
         if (result) {
-            this.canvasState = result.state
-            this.render()
+            if (this.socket?.conn.readyState === WebSocket.OPEN) {
+                this.socket.sendMessage("redo", null)
+            } else {
+                this.canvasState = result.state
+                this.render()
+            }
             console.log("Redo successful")
             return true
         }

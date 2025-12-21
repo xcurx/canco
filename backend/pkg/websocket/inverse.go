@@ -193,3 +193,97 @@ func computeDeselectAllInverse(state types.RoomState) *types.Operation {
         },
     }
 }
+
+func applyInverseToRoomState(inverse *types.Operation, room *types.Room) {
+	switch inverse.Type {
+	case types.DeleteShape:
+		data, ok := inverse.Data.(map[string]interface{})
+		if !ok {
+			return
+		}
+
+		shapeID, ok := data["id"].(string)
+		if !ok {
+			return
+		}
+
+		for i, shape := range room.RoomState.Shapes {
+			if shape.ID == shapeID {
+				room.RoomState.Shapes = append(room.RoomState.Shapes[:i], room.RoomState.Shapes[i+1:]...)
+				break
+			}
+		}
+
+	case types.CreateShape:
+		data, ok := inverse.Data.(map[string]interface{})
+		if !ok {
+			return
+		}
+		shapeData, ok := data["shape"].(map[string]interface{})
+		if !ok {
+			if shape, ok := data["shape"].(*types.Shape); ok {
+				room.RoomState.Shapes = append(room.RoomState.Shapes, *shape)
+			}
+			return
+		}
+
+		shape := types.Shape{}
+		if id, ok := shapeData["id"].(string); ok {
+			shape.ID = id
+		}
+		if t, ok := shapeData["type"].(string); ok {
+			shape.Type = t
+		}
+		if x, ok := shapeData["x"].(float64); ok {
+			shape.X = int(x)
+		}
+		if y, ok := shapeData["y"].(float64); ok {
+			shape.Y = int(y)
+		}
+		if w, ok := shapeData["width"].(float64); ok {
+			shape.Width = int(w)
+		}
+		if h, ok := shapeData["height"].(float64); ok {
+			shape.Height = int(h)
+		}
+		if c, ok := shapeData["color"].(string); ok {
+			shape.Color = c
+		}
+		if z, ok := shapeData["zIndex"].(float64); ok {
+			shape.ZIndex = int(z)
+		}
+		room.RoomState.Shapes = append(room.RoomState.Shapes, shape)
+
+	case types.UpdateShape:
+		data, ok := inverse.Data.(map[string]interface{})
+		if !ok {
+			return
+		}
+		shapeID, ok := data["id"].(string)
+		if !ok {
+			return
+		}
+		changes, ok := data["changes"].(map[string]interface{})
+		if !ok {
+			return
+		}
+		for i, shape := range room.RoomState.Shapes {
+			if shape.ID == shapeID {
+				if x, ok := changes["x"].(float64); ok {
+					room.RoomState.Shapes[i].X = int(x)
+				}
+				if y, ok := changes["y"].(float64); ok {
+					room.RoomState.Shapes[i].Y = int(y)
+				}
+				if w, ok := changes["width"].(float64); ok {
+					room.RoomState.Shapes[i].Width = int(w)
+				}
+				if h, ok := changes["height"].(float64); ok {
+					room.RoomState.Shapes[i].Height = int(h)
+				}
+				break
+			}
+		}
+	}
+}
+    

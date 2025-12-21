@@ -96,7 +96,12 @@ func HandleUndo(data interface{}, room *types.Room, userID string) {
 	room.Users[userIndex].UserState.UndoStack = undoStack[:len(undoStack)-1]
 	room.Users[userIndex].UserState.RedoStack = append(room.Users[userIndex].UserState.RedoStack, lastIndex)
 
+	log.Printf("UndoStack was: %v, popped index: %d, history length: %d", undoStack, lastIndex, len(room.RoomState.History))
+
 	op := room.RoomState.History[lastIndex]
+
+	log.Printf("Operation at index %d: type=%s, data=%+v, inverse data=%+v", lastIndex, op.Type.String(), op.Data, op.Inverse.Data)
+
 	if op.Inverse == nil {
 		log.Println("No inverse found for index:", lastIndex)
 		room.Mutex.Unlock()
@@ -104,7 +109,9 @@ func HandleUndo(data interface{}, room *types.Room, userID string) {
 	}
 
 	inverse := op.Inverse
-	log.Printf("Undoing with inverse: %s", inverse.Type.String())
+	log.Printf("Undoing with inverse: %s, data: %+v", inverse.Type.String(), inverse.Data)
+
+    applyInverseToRoomState(inverse, room)
 
 	room.Mutex.Unlock()
 	room.BroadcastEvent(inverse.Type.String(), inverse)
