@@ -111,9 +111,49 @@ func HandleUndo(data interface{}, room *types.Room, userID string) {
 	inverse := op.Inverse
 	log.Printf("Undoing with inverse: %s, data: %+v", inverse.Type.String(), inverse.Data)
 
-    applyInverseToRoomState(inverse, room)
+    applyOperationToRoomState(inverse, room)
 
 	room.Mutex.Unlock()
 	room.BroadcastEvent(inverse.Type.String(), inverse)
+}
+
+func HandleRedo(data interface{}, room *types.Room, userID string) {
+	room.Mutex.Lock()
+
+	var userIndex int = -1
+	for i, user := range room.Users {
+		if user.ID == userID {
+			userIndex = i
+			break
+		}
+	}
+
+	if userIndex == -1 {
+		log.Println("User not found")
+		room.Mutex.Unlock()
+		return
+	}
+
+	redoStack := room.Users[userIndex].UserState.RedoStack
+	if len(redoStack) == 0 {
+		log.Println("User not found")
+		room.Mutex.Unlock()
+		return
+	}
+
+	lastIndex := redoStack[len(redoStack)-1]
+	room.Users[userIndex].UserState.RedoStack = redoStack[:len(redoStack)-1]
+	room.Users[userIndex].UserState.UndoStack = append(room.Users[userIndex].UserState.UndoStack, lastIndex)
+
+	log.Printf("RedoStack was: %v, popped index: %d, history length: %d", redoStack, lastIndex, len(room.RoomState.History))
+
+	op := room.RoomState.History[lastIndex]
+
+	log.Println("Redoing with operation:", op.Type.String(), op.Data)
+
+	applyOperationToRoomState(&op, room)
+
+	room.Mutex.Unlock()
+	room.BroadcastEvent(op.Type.String(), op)
 }
 	

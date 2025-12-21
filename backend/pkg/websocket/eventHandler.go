@@ -33,6 +33,10 @@ func HandleEvents(conn *websocket.Conn, room *types.Room, userID string) {
 		case "undo": 
 			log.Println("Handling undo event")
 			HandleUndo(event.Data, room, userID)
+
+		case "redo":
+			log.Println("Handling redo event")
+			HandleRedo(event.Data, room, userID)
 		}
 	}
 }

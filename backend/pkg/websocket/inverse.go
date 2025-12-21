@@ -194,10 +194,10 @@ func computeDeselectAllInverse(state types.RoomState) *types.Operation {
     }
 }
 
-func applyInverseToRoomState(inverse *types.Operation, room *types.Room) {
-	switch inverse.Type {
+func applyOperationToRoomState(op *types.Operation, room *types.Room) {
+	switch op.Type {
 	case types.DeleteShape:
-		data, ok := inverse.Data.(map[string]interface{})
+		data, ok := op.Data.(map[string]interface{})
 		if !ok {
 			return
 		}
@@ -215,7 +215,7 @@ func applyInverseToRoomState(inverse *types.Operation, room *types.Room) {
 		}
 
 	case types.CreateShape:
-		data, ok := inverse.Data.(map[string]interface{})
+		data, ok := op.Data.(map[string]interface{})
 		if !ok {
 			return
 		}
@@ -255,7 +255,7 @@ func applyInverseToRoomState(inverse *types.Operation, room *types.Room) {
 		room.RoomState.Shapes = append(room.RoomState.Shapes, shape)
 
 	case types.UpdateShape:
-		data, ok := inverse.Data.(map[string]interface{})
+		data, ok := op.Data.(map[string]interface{})
 		if !ok {
 			return
 		}
