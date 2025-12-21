@@ -1,4 +1,4 @@
-import { RendererContext } from '@/app/page'
+import { RendererContext } from '@/app/room/[roomId]/page'
 import React, { useContext, useState } from 'react'
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { RectangleHorizontal, Circle as CircleIcon, LineChartIcon, Undo, Redo } from 'lucide-react'

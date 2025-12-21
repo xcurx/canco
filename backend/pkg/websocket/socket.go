@@ -3,7 +3,6 @@ package websocketPkg
 import (
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -32,23 +31,10 @@ func Connect(c *gin.Context) {
 
 	userID := room.AddUser(conn)
 
-	HandleEvents(conn, room, userID);
-
-	go func() {
-		for {
-		    room.Mutex.RLock()
-			for _, user := range room.Users {
-				if user.ID == userID {
-					log.Println(user.UserState.Operation)
-				}
-			}
-			room.Mutex.RUnlock()
-			time.Sleep(time.Second*2)
-		}
-	}()
+	HandleEvents(conn, room, userID)
 
 	defer func() {
-		// room.RemoveUser()
+		room.RemoveUser(userID)
 		conn.Close()
 		log.Println("WebSocket connection closed for canvas ID:", roomID)
 	}()

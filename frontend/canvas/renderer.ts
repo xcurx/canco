@@ -20,8 +20,9 @@ export class Renderer {
     private currentInteractionState: CanvasStateEnum = CanvasStateEnum.IDLE
 
     private socket: Socket | null = null
+    private roomId?: string
 
-    constructor(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, url: string) {
+    constructor(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, roomId?: string) {
         this.ctx = ctx
         this.canvas = canvas
         
@@ -40,6 +41,8 @@ export class Renderer {
             () => this.canvasState,
             this.toolManager
         )
+
+        const url = this.roomId ? `ws://localhost:8080/api/join/${this.roomId}` : undefined
 
         if (url) {
             this.socket = new Socket(url, {
@@ -84,7 +87,7 @@ export class Renderer {
         this.render()
     }
 
-    initializeSocket(url: string): void {
+    initializeSocket(url: string, setLoading: (loading: boolean) => void): void {
         if (!this.socket) {
             this.socket = new Socket(url, {
                 onOpen: () => {
@@ -94,6 +97,18 @@ export class Renderer {
                     console.log('Received message:', msg)
                     this.onMessage(msg)
                 }
+            })
+            const waitForConnection = (socket: WebSocket, callback: () => void) => {
+                setTimeout(() => {
+                    if (socket.readyState === WebSocket.OPEN) {
+                        callback()
+                    } else {
+                        waitForConnection(socket, callback)
+                    }
+                }, 5)
+            }
+            waitForConnection(this.socket.conn, () => {
+                setLoading(false)
             })
             this.socket.onMessage()
         }

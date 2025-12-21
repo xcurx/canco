@@ -1,9 +1,12 @@
-import { RendererContext } from '@/app/page'
+import { RendererContext } from '@/app/room/[roomId]/page'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { render } from '../canvas/animate'
-// import { RendererContext } from '../App'
 
-const Canvas = () => {
+interface CanvasProps {
+    roomId: string;
+}
+
+const Canvas = ({ roomId }: CanvasProps) => {
     const canvas = useRef<HTMLCanvasElement | null>(null)
     const [ctx, setCtx] = useState<CanvasRenderingContext2D | null>(null)
 
@@ -20,11 +23,11 @@ const Canvas = () => {
     useEffect(() => {
       if(ctx){
           console.log("context set");
-          const renderer = render(ctx, canvas.current!)
+          const renderer = render(ctx, canvas.current!, roomId)
           console.log("renderer created: ", renderer);
           setRenderer(renderer)
       }
-    }, [ctx])
+    }, [ctx, roomId])
 
     console.log("renderer in canvas: ", renderer);
     
