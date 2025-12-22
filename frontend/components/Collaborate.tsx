@@ -4,11 +4,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Button } from './button'
-import { Separator } from './separator';
+import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { RendererContext } from '@/app/room/[roomId]/page'
-import { Spinner } from './spinner';
+import { Spinner } from '@/components/ui/spinner';
 
 const Collaborate = ({ roomId }: { roomId: string }) => {
     const [isJoined, setIsJoined] = useState(false);
@@ -25,7 +25,10 @@ const Collaborate = ({ roomId }: { roomId: string }) => {
     } 
 
     const handleLeave = () => {
-        setIsJoined(false);
+        if (renderer) {
+            renderer.closeSocket(setLoading);
+            setIsJoined(false);
+        }
     }
 
   return (

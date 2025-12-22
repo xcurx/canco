@@ -96,6 +96,9 @@ export class Renderer {
                 onMessage: (msg) => {
                     console.log('Received message:', msg)
                     this.onMessage(msg)
+                },
+                onClose: () => {
+                    console.log('WebSocket connection closed')
                 }
             })
             const waitForConnection = (socket: WebSocket, callback: () => void) => {
@@ -112,6 +115,25 @@ export class Renderer {
             })
             this.socket.onMessage()
         }
+    }
+
+    closeSocket(setLoading: (loading: boolean) => void): void {
+        if (this.socket) {
+            this.socket.close()
+            const waitForConnection = (socket: WebSocket, callback: () => void) => {
+                setTimeout(() => {
+                    if (socket.readyState === WebSocket.CLOSING) {
+                        callback()
+                    } else {
+                        waitForConnection(socket, callback)
+                    }
+                }, 5)
+            }
+            waitForConnection(this.socket.conn, () => {
+                setLoading(false)
+            })
+        }
+        this.socket = null
     }
 
     private handleStateChange(state: CanvasStateEnum): void {
@@ -218,10 +240,6 @@ export class Renderer {
     getCanvasState(): CanvasState {
         return this.canvasState
     }
-
-    // getToolConfig() {
-    //     return this.toolManager.getToolConfig()
-    // }
 
     getInteractionState(): CanvasStateEnum {
         return this.currentInteractionState

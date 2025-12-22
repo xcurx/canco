@@ -3,8 +3,7 @@
 import { Renderer } from "@/canvas/renderer";
 import Canvas from "@/components/Canvas";
 import Options from "@/components/Options";
-import ShareButton from "@/components/ShareButton";
-import Collaborate from "@/components/ui/Collaborate";
+import Collaborate from "@/components/Collaborate";
 import { createContext, useState, use } from "react";
 
 interface RendererContextType {
