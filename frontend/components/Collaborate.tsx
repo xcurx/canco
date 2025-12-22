@@ -17,7 +17,7 @@ const Collaborate = ({ roomId }: { roomId: string }) => {
 
     const handleJoin = () => {
         if (renderer) {
-            const wsUrl = `ws://localhost:8080/api/join/${roomId}`;
+            const wsUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/join/${roomId}`;
             setLoading(true);
             renderer.initializeSocket(wsUrl, setLoading);
             setIsJoined(true);
