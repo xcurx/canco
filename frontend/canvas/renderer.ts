@@ -1,7 +1,7 @@
 import { ShapeData, CanvasState as CanvasStateEnum, Operation } from './type'
 import { CanvasState } from './state'
 import { renderShape } from './renderShapes'
-import { HistoryManager } from './history'
+import { HistoryCallbacks, HistoryManager } from './history'
 import { ToolManager } from './tools'
 import { InteractionManager, InteractionCallbacks } from './interaction'
 import { Socket, Message } from '../websocket/socket'
@@ -228,6 +228,10 @@ export class Renderer {
 
     canRedo(): boolean {
         return this.historyManager.canRedo()
+    }
+
+    setHistoryCallbacks(callbacks: HistoryCallbacks): void {
+        this.historyManager.setCallbacks(callbacks)
     }
 
     clear(): void {

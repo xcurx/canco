@@ -1,5 +1,5 @@
 import { RendererContext } from '@/app/room/[roomId]/page'
-import React, { useContext, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { RectangleHorizontal, Circle as CircleIcon, LineChartIcon, Undo, Redo } from 'lucide-react'
 import { Button } from './ui/button'
@@ -7,6 +7,8 @@ import { Button } from './ui/button'
 const Options = () => {
     const {renderer} = useContext(RendererContext)
     const [currentOption, setCurrentOption] = useState<string | undefined>("")
+    const [canUndo, setCanUndo] = useState(false)
+    const [canRedo, setCanRedo] = useState(false)
 
     const handleOptionChange = (value: string) => {
         if (!renderer) return
@@ -49,6 +51,25 @@ const Options = () => {
         }
     }
 
+    const handleHistoryChange = () => {
+        console.log("History changed")
+        if (renderer) {
+            setCanUndo(renderer.canUndo())
+            setCanRedo(renderer.canRedo())
+        }
+    }
+
+    useEffect(() => {
+        if (renderer) {
+            renderer.setHistoryCallbacks({
+                onHistoryChange: handleHistoryChange
+            })
+        }
+    }, [renderer])
+
+    console.log("Can undo: ", canUndo)
+    console.log("Can redo: ", canRedo)
+
   return (
     <div className='absolute top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2'>
         <ToggleGroup 
@@ -64,10 +85,10 @@ const Options = () => {
         
         {/* Undo/Redo buttons */}
         <div className="flex gap-1">
-            <Button variant="outline" size="sm" onClick={handleUndo} disabled={!renderer || !renderer.canUndo()}>
+            <Button variant="outline" size="sm" onClick={handleUndo} disabled={!renderer || !canUndo}>
                 <Undo className="w-4 h-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={handleRedo} disabled={!renderer || !renderer.canRedo()}>
+            <Button variant="outline" size="sm" onClick={handleRedo} disabled={!renderer || !canRedo}>
                 <Redo className="w-4 h-4" />
             </Button>
         </div>

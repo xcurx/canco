@@ -1,14 +1,26 @@
 import { CreateShapeOperation, DeleteShapeOperation, Operation, ShapeData, UpdateShapeOperation } from './type'
 import { CanvasState } from './state'
 
+export type HistoryCallbacks = {
+    onHistoryChange: () => void
+}
+
 export class HistoryManager {
     private operationHistory: Operation[] = []
     private currentHistoryIndex = -1
     private maxHistorySize = 50
     private getCanvasState: () => CanvasState
+    private callbacks: HistoryCallbacks
 
-    constructor(getCanvasState: () => CanvasState) {
+    constructor(getCanvasState: () => CanvasState, callbacks?: HistoryCallbacks) {
         this.getCanvasState = getCanvasState
+        if (!callbacks) {
+            this.callbacks = {
+                onHistoryChange: () => {}
+            }
+        } else {
+            this.callbacks = callbacks
+        }
     }
 
     addOperation(operation: Operation, originalShape?: ShapeData): void {
@@ -28,6 +40,7 @@ export class HistoryManager {
         }
 
         console.log("History index is",this.currentHistoryIndex)
+        this.callbacks.onHistoryChange()
     }
 
     undo(): { state: CanvasState; inverseOp: Operation } | null {
@@ -42,6 +55,7 @@ export class HistoryManager {
 
         const state = CanvasState.applyOperation(this.getCanvasState(), operation.inverse)
         this.currentHistoryIndex--
+        this.callbacks.onHistoryChange()
         
         return {
             state,
@@ -56,6 +70,7 @@ export class HistoryManager {
         const operation = this.operationHistory[this.currentHistoryIndex]
         
         const state = CanvasState.applyOperation(this.getCanvasState(), operation)
+        this.callbacks.onHistoryChange()
         return { state, operation }
     }
 
@@ -71,9 +86,14 @@ export class HistoryManager {
         return this.currentHistoryIndex < this.operationHistory.length - 1
     }
 
+    setCallbacks(callbacks: HistoryCallbacks): void {
+        this.callbacks = callbacks
+    }
+
     clear(): void {
         this.operationHistory = []
         this.currentHistoryIndex = -1
+        this.callbacks.onHistoryChange()
         console.log("History cleared")
     }
 
