@@ -62,6 +62,11 @@ func (r *Room) AddUser(conn *websocket.Conn) string {
 
 	r.Users = append(r.Users, user)
 	log.Printf("User %s joined room %s", user.ID, r.ID)
+
+	conn.WriteJSON(Event{
+		Type: "join",
+		Data: r.RoomState.Shapes,
+	})
 	return user.ID
 }
 

@@ -22,7 +22,7 @@ const Collaborate = ({ roomId }: { roomId: string }) => {
             renderer.initializeSocket(wsUrl, setLoading);
             setIsJoined(true);
         }
-    } 
+    }
 
     const handleLeave = () => {
         if (renderer) {

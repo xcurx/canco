@@ -294,6 +294,12 @@ export class Renderer {
 
     private onMessage = (msg: Message): void => {
         console.log('Received message:', msg)
+        if (msg.type == "join") {
+            this.historyManager.clear()
+            this.canvasState = new CanvasState(msg.data as ShapeData[])
+            this.render()
+            return
+        }
         this.applyOperation(msg.data, true)
     }
 
