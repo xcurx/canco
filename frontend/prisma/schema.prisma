@@ -20,6 +20,8 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
+
+  Canvas        Canvas[]
  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -62,4 +64,32 @@ model VerificationToken {
   expires    DateTime
  
   @@id([identifier, token])
+}
+
+model Canvas {
+  id        String   @id @default(cuid())
+  name      String
+  Shapes   Shape[]
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Shape {
+  id        String   @id @default(cuid())
+  type      String
+  x         Float
+  y         Float
+  width     Float
+  height    Float
+  color     String
+  zIndex    Int
+  canvasId  String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  canvas Canvas @relation(fields: [canvasId], references: [id], onDelete: Cascade)
 }

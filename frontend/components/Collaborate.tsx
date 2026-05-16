@@ -16,16 +16,17 @@ interface CollaborateProps {
     isAuthed: boolean;
     signInAction: (formData: FormData) => Promise<void>;
     signOutAction: (formData: FormData) => Promise<void>;
+    token: string | undefined;
 }
 
-const Collaborate = ({ roomId, isAuthed, signInAction, signOutAction }: CollaborateProps) => {
+const Collaborate = ({ roomId, isAuthed, signInAction, signOutAction, token }: CollaborateProps) => {
     const [isJoined, setIsJoined] = useState(false);
     const { renderer } = useContext(RendererContext);
     const [loading, setLoading] = useState(false);
 
     const handleJoin = () => {
         if (renderer) {
-            const wsUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/join/${roomId}`;
+            const wsUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/join/${roomId}?token=${token}`;
             setLoading(true);
             renderer.initializeSocket(wsUrl, setLoading);
             setIsJoined(true);
@@ -89,7 +90,7 @@ const Collaborate = ({ roomId, isAuthed, signInAction, signOutAction }: Collabor
                              size='sm' 
                              className='bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200'
                              onClick={() => {
-                                navigator.clipboard.writeText(`http://localhost:3000/room/${roomId}`);
+                                navigator.clipboard.writeText(`http://localhost:3000/canvas/${roomId}?token=${token}`);
                                 toast.success("Copied to clipboard", {
                                     className: "bg-gradient-to-br from-blue-600 to-purple-600 text-white border-none",
                                     description: "Share the link to invite others."

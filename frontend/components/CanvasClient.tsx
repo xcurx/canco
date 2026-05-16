@@ -7,19 +7,21 @@ import Collaborate from "@/components/Collaborate";
 import Options from "@/components/Options";
 import { RendererContext } from "@/components/renderer-context";
 
-interface RoomClientProps {
+interface CanvasClientProps {
   roomId: string;
   isAuthed: boolean;
   signInAction: (formData: FormData) => Promise<void>;
   signOutAction: (formData: FormData) => Promise<void>;
+  token: string | undefined;
 }
 
-export default function RoomClient({
+export default function CanvasClient({
   roomId,
   isAuthed,
   signInAction,
   signOutAction,
-}: RoomClientProps) {
+  token,
+}: CanvasClientProps) {
   const [renderer, setRenderer] = useState<Renderer | null>(null);
 
   return (
@@ -32,6 +34,7 @@ export default function RoomClient({
             isAuthed={isAuthed}
             signInAction={signInAction}
             signOutAction={signOutAction}
+            token={token}
           />
           <Canvas roomId={roomId} />
         </div>

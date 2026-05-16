@@ -9,7 +9,7 @@ export default function Home() {
   useEffect(() => {
     // Generate a unique room ID and redirect
     const roomId = crypto.randomUUID().slice(0, 8);
-    router.replace(`/room/${roomId}`);
+    router.replace(`/canvas/${roomId}`);
   }, [router]);
 
   return (
