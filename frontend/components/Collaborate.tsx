@@ -7,10 +7,18 @@ import {
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { RendererContext } from '@/app/room/[roomId]/page'
+import { RendererContext } from '@/components/renderer-context'
 import { Spinner } from '@/components/ui/spinner';
+import { Users } from 'lucide-react';
 
-const Collaborate = ({ roomId }: { roomId: string }) => {
+interface CollaborateProps {
+    roomId: string;
+    isAuthed: boolean;
+    signInAction: (formData: FormData) => Promise<void>;
+    signOutAction: (formData: FormData) => Promise<void>;
+}
+
+const Collaborate = ({ roomId, isAuthed, signInAction, signOutAction }: CollaborateProps) => {
     const [isJoined, setIsJoined] = useState(false);
     const { renderer } = useContext(RendererContext);
     const [loading, setLoading] = useState(false);
@@ -34,12 +42,45 @@ const Collaborate = ({ roomId }: { roomId: string }) => {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button className='absolute top-4 right-4 bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200'>
-            Collaborate
+        <Button
+            size="icon"
+            className='absolute top-4 right-4 z-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200'
+            aria-label="Open collaboration menu"
+        >
+            <Users className="h-5 w-5" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='px-1'>
+      <PopoverContent align="end" className='px-1'>
         <div className='flex flex-col gap-2 p-1 items-center'>
+            {isAuthed && (
+                <>
+                    <form action={signOutAction} className="w-full">
+                        <Button
+                            type="submit"
+                            size="sm"
+                            variant="outline"
+                            className="w-full"
+                        >
+                            Sign out
+                        </Button>
+                    </form>
+                    <Separator/>
+                </>
+            )}
+            {!isAuthed && (
+                <>
+                    <form action={signInAction} className="w-full">
+                        <Button
+                            type="submit"
+                            size="sm"
+                            className='w-full bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200'
+                        >
+                            Sign in with Google
+                        </Button>
+                    </form>
+                    <Separator/>
+                </>
+            )}
             {
                 (!loading && isJoined) ? (
                     <>
@@ -77,15 +118,27 @@ const Collaborate = ({ roomId }: { roomId: string }) => {
                             loading? (
                                 <Spinner/>
                             ) : (
-                                <Button
-                                    size='sm'
-                                    className='bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200'
-                                    onClick={() => {
-                                        handleJoin();
-                                    }}
-                                >
-                                    Start session
-                                </Button>
+                                isAuthed ? (
+                                    <Button
+                                        size='sm'
+                                        className='w-full bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200'
+                                        onClick={() => {
+                                            handleJoin();
+                                        }}
+                                    >
+                                        Collaborate
+                                    </Button>
+                                ) : (
+                                    <form action={signInAction} className="w-full">
+                                        <Button
+                                            type="submit"
+                                            size='sm'
+                                            className='w-full bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200'
+                                        >
+                                            Collaborate
+                                        </Button>
+                                    </form>
+                                )
                             )
                         } 
                         <p className='text-xs text-center'>Start a session to invite others to collaborate with you.</p>

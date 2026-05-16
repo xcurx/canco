@@ -1,4 +1,4 @@
-import { RendererContext } from '@/app/room/[roomId]/page'
+import { RendererContext } from '@/components/renderer-context'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { render } from '../canvas/animate'
 

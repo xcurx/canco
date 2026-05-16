@@ -1,38 +1,29 @@
-"use client"
-
-import { Renderer } from "@/canvas/renderer";
-import Canvas from "@/components/Canvas";
-import Options from "@/components/Options";
-import Collaborate from "@/components/Collaborate";
-import { createContext, useState, use } from "react";
-
-interface RendererContextType {
-  renderer: Renderer | null;
-  setRenderer: React.Dispatch<React.SetStateAction<Renderer | null>>;
-}
-
-export const RendererContext = createContext<RendererContextType>({
-  renderer: null, 
-  setRenderer: () => {}
-}); 
+import RoomClient from "@/components/RoomClient";
+import { auth, signIn, signOut } from "@/auth";
 
 interface PageProps {
-  params: Promise<{ roomId: string }>;
+  params: { roomId: string };
 }
 
-export default function RoomPage({ params }: PageProps) {
-  const { roomId } = use(params);
-  const [renderer, setRenderer] = useState<Renderer | null>(null);
+async function signInWithGoogle() {
+  "use server";
+  await signIn("google");
+}
+
+async function signOutUser() {
+  "use server";
+  await signOut();
+}
+
+export default async function RoomPage({ params }: PageProps) {
+  const session = await auth();
 
   return (
-    <div className="h-screen w-screen">
-      <RendererContext.Provider value={{renderer, setRenderer}}>
-        <div className="h-full w-full relative flex justify-center items-center">
-          <Options/>
-          <Collaborate roomId={roomId} />
-          <Canvas roomId={roomId} />
-        </div>
-      </RendererContext.Provider>
-    </div>
+    <RoomClient
+      roomId={params.roomId}
+      isAuthed={Boolean(session?.user)}
+      signInAction={signInWithGoogle}
+      signOutAction={signOutUser}
+    />
   );
 }
