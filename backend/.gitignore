@@ -1,0 +1,24 @@
+# Go binaries and build artifacts
+/bin/
+/tmp/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Coverage
+/coverage/
+coverage.out
+
+# Env files
+.env
+.env.*
+
+# Editor/OS
+.idea/
+.vscode/
+.DS_Store

@@ -5,7 +5,6 @@ import (
 	"log"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -44,12 +43,12 @@ func (rm *RoomManager) GetOrCreateRoom(roomID string) *Room {
 	return room
 }
 
-func (r *Room) AddUser(conn *websocket.Conn) string {
+func (r *Room) AddUser(conn *websocket.Conn, userId string) string {
     r.Mutex.Lock()
 	defer r.Mutex.Unlock()
 
 	user := User{
-		ID:   uuid.New().String(),
+		ID:  userId,
 		Name: "Anonymous",
 		UserState: UserState{
 			Operation: make([]Operation, 0),

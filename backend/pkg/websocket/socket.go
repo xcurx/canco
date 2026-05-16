@@ -6,10 +6,21 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/xcurx/canco-backend/internal/auth"
+	"github.com/xcurx/canco-backend/internal/config"
 	"github.com/xcurx/canco-backend/internal/types"
 )
 
 func Connect(c *gin.Context) {
+	cfg := config.Load()
+	tokenString := c.Request.URL.Query().Get("token")
+
+	userId, err := auth.ValidateToke(tokenString, cfg.AuthSecret)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
 	roomID := c.Param("roomID")
 
 	upgrader := websocket.Upgrader{
@@ -29,7 +40,7 @@ func Connect(c *gin.Context) {
 	room := roomManager.GetOrCreateRoom(roomID)
 	log.Printf("Room ID: %s, Title: %s", room.ID, room.Title)
 
-	userID := room.AddUser(conn)
+	userID := room.AddUser(conn, userId)
 
 	HandleEvents(conn, room, userID)
 
