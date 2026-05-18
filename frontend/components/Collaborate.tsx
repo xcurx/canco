@@ -26,7 +26,10 @@ const Collaborate = ({ roomId, isAuthed, signInAction, signOutAction, token }: C
 
     const handleJoin = () => {
         if (renderer) {
-            const wsUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/join/${roomId}?token=${token}`;
+            let wsUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/join/${roomId}`;
+            if (token) {
+                wsUrl += `?token=${token}`;
+            }
             setLoading(true);
             renderer.initializeSocket(wsUrl, setLoading);
             setIsJoined(true);
@@ -90,7 +93,7 @@ const Collaborate = ({ roomId, isAuthed, signInAction, signOutAction, token }: C
                              size='sm' 
                              className='bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200'
                              onClick={() => {
-                                navigator.clipboard.writeText(`http://localhost:3000/canvas/${roomId}?token=${token}`);
+                                navigator.clipboard.writeText(`http://localhost:3000/canvas/${roomId}`);
                                 toast.success("Copied to clipboard", {
                                     className: "bg-gradient-to-br from-blue-600 to-purple-600 text-white border-none",
                                     description: "Share the link to invite others."

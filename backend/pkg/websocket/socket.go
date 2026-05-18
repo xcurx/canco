@@ -13,15 +13,26 @@ import (
 
 func Connect(c *gin.Context) {
 	cfg := config.Load()
-	tokenString := c.Request.URL.Query().Get("token")
+	tokenString := c.Query("token")
+	var userId string
+	var err error
+	var isPersistent bool
 
-	userId, err := auth.ValidateToke(tokenString, cfg.AuthSecret)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
+	// if a token is provided try to authenticate
+	if tokenString != "" {
+		userId, err = auth.ValidateToken(tokenString, cfg.AuthSecret)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			return
+		}
+		isPersistent = true
+	} else {
+		// no token means its a local connection
+		userId = "guest_" + c.ClientIP()
+		isPersistent = false
 	}
 
-	roomID := c.Param("roomID")
+	roomID := c.Param("canvasID")
 
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
@@ -38,7 +49,7 @@ func Connect(c *gin.Context) {
 
 	roomManager := types.GetRoomManager()
 	room := roomManager.GetOrCreateRoom(roomID)
-	log.Printf("Room ID: %s, Title: %s", room.ID, room.Title)
+	log.Printf("Room ID: %s, Title: %s, Persistent: %v", room.ID, room.Title, isPersistent)
 
 	userID := room.AddUser(conn, userId)
 

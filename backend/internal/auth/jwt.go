@@ -6,7 +6,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func ValidateToke(tokenString string, secret string) (string, error) {
+func ValidateToken(tokenString string, secret string) (string, error) {
 	jwtSecret := []byte(secret)
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
