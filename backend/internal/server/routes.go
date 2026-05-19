@@ -30,6 +30,7 @@ func InitializeServer(db *database.DB) *gin.Engine {
 	{
 		api.POST("/createRoom", handlers.CreateRoom)
 		api.GET("/join/:canvasID", wsHandler.Connect)
+		api.GET("/check-session/:roomId", handlers.CheckSession)
 	}
 	return r
 }

@@ -22,6 +22,16 @@ func GetRoomManager() *RoomManager {
 	return roomManager
 }
 
+func RoomExists(roomId string) bool {
+	if roomManager == nil {
+		return false
+	}
+	roomManager.mutex.RLock()
+	defer roomManager.mutex.RUnlock()
+    _, ok := roomManager.Rooms[roomId]
+	return ok
+}
+
 func (rm *RoomManager) GetOrCreateRoom(roomID string, isPersistent bool, db *database.DB) *Room {
 	rm.mutex.Lock()
 	defer rm.mutex.Unlock()
