@@ -103,6 +103,10 @@ func updateShape(op types.Operation, room *types.Room, userID string, db *databa
 		return
 	}
 
+	if changes.ID == nil && data.ID != "" {
+		changes.ID = &data.ID
+	}
+
 	if isPersistent {
 		go update_shape(changes, room.ID, db)
 	}

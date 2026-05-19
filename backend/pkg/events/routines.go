@@ -28,6 +28,10 @@ func create_shape(shape types.Shape, roomId string, db *database.DB) {
 
 func update_shape(changes types.PartialShape, roomId string, db *database.DB) {
 	ctx := context.Background()
+	if changes.ID == nil {
+		log.Printf("Cannot update shape: ID is nil")
+		return
+	}
 	existing, err := db.Queries.GetShape(ctx, *changes.ID)
 	if err != nil {
 		return
