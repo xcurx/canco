@@ -113,7 +113,7 @@ func (q *Queries) GetShapesByCanvasId(ctx context.Context, canvasid string) ([]G
 }
 
 const upsertShape = `-- name: UpsertShape :exec
-INSERT INTO "Shape" (id, type, x, y, width, height, color, "zIndex", "canvasId", "updatesAt") 
+INSERT INTO "Shape" (id, type, x, y, width, height, color, "zIndex", "canvasId", "updatedAt") 
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
 ON CONFLICT (id) DO UPDATE 
 SET type = EXCLUDED.type,
