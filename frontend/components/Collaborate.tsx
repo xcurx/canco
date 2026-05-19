@@ -56,11 +56,16 @@ const Collaborate = ({ roomId, isAuthed, signInAction, signOutAction, token }: C
     const hasJoined = useRef(false);
 
     useEffect(() => {
-        if (isAuthed && !hasJoined.current) {
+        console.log("Checking auto-join conditions:", { roomId, isAuthed, hasJoined: hasJoined.current, rendererExists: !!renderer });
+        
+        if (!renderer) return;
+
+        if ((roomId !== "local" || isAuthed) && !hasJoined.current) {
+            console.log("Auto-joining room:", roomId);
             hasJoined.current = true;
             handleJoin();
         }
-    }, [roomId, isAuthed])
+    }, [roomId, isAuthed, renderer])
 
   return (
     <Popover>
