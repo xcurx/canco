@@ -1,11 +1,13 @@
 package types
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"sync"
 
 	"github.com/gorilla/websocket"
+	"github.com/xcurx/canco-backend/internal/database"
 )
 
 var roomManager *RoomManager
@@ -20,7 +22,7 @@ func GetRoomManager() *RoomManager {
 	return roomManager
 }
 
-func (rm *RoomManager) GetOrCreateRoom(roomID string) *Room {
+func (rm *RoomManager) GetOrCreateRoom(roomID string, isPersistent bool, db *database.DB) *Room {
 	rm.mutex.Lock()
 	defer rm.mutex.Unlock()
 
@@ -31,6 +33,26 @@ func (rm *RoomManager) GetOrCreateRoom(roomID string) *Room {
 	roomState := RoomState{
 		Shapes:     []Shape{},
 		History:    []Operation{},
+	}
+
+	if (isPersistent) {
+		shapes, err := db.Queries.GetShapesByCanvasId(context.Background(), roomID);
+		if err != nil {
+			log.Printf("Error fetching shapes from db %v", err)
+		}
+		
+		for _, s := range shapes {
+			roomState.Shapes = append(roomState.Shapes, Shape{
+				ID: s.ID,
+				Type: s.Type,
+				X: int(s.X),
+				Y: int(s.Y),
+				Width: int(s.Width),
+				Height: int(s.Height),
+				Color: s.Color,
+				ZIndex: int(s.ZIndex),
+			})
+		}
 	}
 
 	room := &Room{

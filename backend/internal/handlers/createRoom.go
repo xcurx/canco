@@ -12,7 +12,7 @@ func CreateRoom(c *gin.Context) {
     log.Print("Creating room with ID: ", roomID)
 
 	roomManager := types.GetRoomManager()
-	room := roomManager.GetOrCreateRoom(roomID)
+	room := roomManager.GetOrCreateRoom(roomID, false, nil)
 	log.Printf("Room created: %+v", room)
 
 	c.JSON(200, gin.H{

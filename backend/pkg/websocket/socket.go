@@ -8,10 +8,19 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/xcurx/canco-backend/internal/auth"
 	"github.com/xcurx/canco-backend/internal/config"
+	"github.com/xcurx/canco-backend/internal/database"
 	"github.com/xcurx/canco-backend/internal/types"
 )
 
-func Connect(c *gin.Context) {
+type Handler struct {
+	db *database.DB
+}
+
+func New(db *database.DB) *Handler {
+    return &Handler{db: db}
+}
+
+func (h *Handler) Connect(c *gin.Context) {
 	cfg := config.Load()
 	tokenString := c.Query("token")
 	var userId string
@@ -48,12 +57,12 @@ func Connect(c *gin.Context) {
 	log.Println("New WebSocket connection for canvas ID:", roomID)
 
 	roomManager := types.GetRoomManager()
-	room := roomManager.GetOrCreateRoom(roomID)
+	room := roomManager.GetOrCreateRoom(roomID, isPersistent, h.db)
 	log.Printf("Room ID: %s, Title: %s, Persistent: %v", room.ID, room.Title, isPersistent)
 
 	userID := room.AddUser(conn, userId)
 
-	HandleEvents(conn, room, userID)
+	HandleEvents(conn, room, userID, h.db, isPersistent)
 
 	defer func() {
 		room.RemoveUser(userID)

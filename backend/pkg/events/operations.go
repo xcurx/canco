@@ -1,13 +1,14 @@
-package websocketPkg
+package events
 
 import (
 	"encoding/json"
 	"log"
 
+	"github.com/xcurx/canco-backend/internal/database"
 	"github.com/xcurx/canco-backend/internal/types"
 )
 
-func createShape(op types.Operation, room *types.Room, userID string) {
+func createShape(op types.Operation, room *types.Room, userID string, db *database.DB, isPersistent bool) {
 	operationData, ok := op.Data.(map[string]interface{})
 	if !ok {
 		log.Println("Invalid shape data")
@@ -46,6 +47,10 @@ func createShape(op types.Operation, room *types.Room, userID string) {
 		return
 	}
 
+	if isPersistent { 
+		go create_shape(shape, room.ID, db) 
+	}
+
 	room.Mutex.Lock()
 	room.RoomState.Shapes = append(room.RoomState.Shapes, shape)
 	room.Mutex.Unlock()
@@ -53,7 +58,7 @@ func createShape(op types.Operation, room *types.Room, userID string) {
 	room.BroadcastEvent("CREATE_SHAPE", op)
 }
 
-func updateShape(op types.Operation, room *types.Room, userID string) {
+func updateShape(op types.Operation, room *types.Room, userID string, db *database.DB, isPersistent bool) {
 	log.Println("The user id is: ", userID)
 	operationData, ok := op.Data.(map[string]interface{})
 	if !ok {
@@ -98,6 +103,10 @@ func updateShape(op types.Operation, room *types.Room, userID string) {
 		return
 	}
 
+	if isPersistent {
+		go update_shape(changes, room.ID, db)
+	}
+
 	shapeId := data.ID
 
 	room.Mutex.Lock()
@@ -132,7 +141,7 @@ func updateShape(op types.Operation, room *types.Room, userID string) {
 	room.BroadcastEvent("UPDATE_SHAPE", op)
 }
 
-func deleteShape(op types.Operation, room *types.Room, userID string) {
+func deleteShape(op types.Operation, room *types.Room, userID string, db *database.DB, isPersistent bool) {
     operationData, ok := op.Data.(map[string]interface{})
 	if !ok {
 		log.Println("Invalid shape data")
@@ -150,6 +159,10 @@ func deleteShape(op types.Operation, room *types.Room, userID string) {
 	}
 
 	shapeId := unmarshalledOPData.(map[string]interface{})["id"].(string)
+
+	if isPersistent {
+		go delete_shape(shapeId, room.ID, db)
+	}
 
 	room.Mutex.Lock()
  

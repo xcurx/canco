@@ -1,0 +1,67 @@
+package events
+
+import (
+	"context"
+	"log"
+
+	"github.com/xcurx/canco-backend/internal/database"
+	"github.com/xcurx/canco-backend/internal/database/sqlc"
+	"github.com/xcurx/canco-backend/internal/types"
+)
+
+func create_shape(shape types.Shape, roomId string, db *database.DB) {
+	err := db.Queries.UpsertShape(context.Background(), sqlc.UpsertShapeParams{
+	    ID: shape.ID,
+		Type: shape.Type,
+		X: float64(shape.X),
+		Y: float64(shape.Y),
+		Width: float64(shape.Width),
+		Height: float64(shape.Height),
+		Color: shape.Color,
+		ZIndex: int32(shape.ZIndex),
+		CanvasId: roomId,
+	})
+	if (err != nil) {
+		log.Printf("Failed to save shape to db: %v", err)
+	}
+}
+
+func update_shape(changes types.PartialShape, roomId string, db *database.DB) {
+	ctx := context.Background()
+	existing, err := db.Queries.GetShape(ctx, *changes.ID)
+	if err != nil {
+		return
+	}
+
+	if changes.X != nil { existing.X = float64(*changes.X) }
+	if changes.Y != nil { existing.Y = float64(*changes.Y) }
+	if changes.Width != nil  { existing.Width  = float64(*changes.Width)  }
+	if changes.Height != nil { existing.Height = float64(*changes.Height) }
+	if changes.Color != nil  { existing.Color  = *changes.Color  }
+	if changes.ZIndex != nil { existing.ZIndex = int32(*changes.ZIndex) }
+
+	err = db.Queries.UpsertShape(ctx, sqlc.UpsertShapeParams{
+		ID:       existing.ID,
+		Type:     existing.Type,
+		X:        existing.X,
+		Y:        existing.Y,
+		Width:    existing.Width,
+		Height:   existing.Height,
+		Color:    existing.Color,
+		ZIndex:   existing.ZIndex,
+		CanvasId: roomId,
+	})
+	if err != nil {
+		log.Printf("Failed to update shape: %v", err)
+	}
+}
+
+func delete_shape(shapeId string, roomId string, db *database.DB) {
+	err := db.Queries.DeleteShape(context.Background(), sqlc.DeleteShapeParams{
+		ID: shapeId,
+		CanvasId: roomId,
+	})
+	if err != nil {
+		log.Printf("Failed to delete shape: %v", err)
+	}
+}

@@ -1,13 +1,26 @@
-package websocketPkg
+package events
 
 import (
 	"encoding/json"
 	"log"
 
+	"github.com/xcurx/canco-backend/internal/database"
 	"github.com/xcurx/canco-backend/internal/types"
 )
 
-func HandleOperation(data interface{}, room *types.Room, userID string) {
+type EventHandler struct {
+	db *database.DB
+	isPersistent bool
+}
+
+func New(db *database.DB, isPersistent bool) *EventHandler {
+    return &EventHandler{
+		db: db,
+		isPersistent: isPersistent,
+	}
+}
+
+func (h *EventHandler) HandleOperation(data interface{}, room *types.Room, userID string) {
     var op types.Operation
 	bytes, err := json.Marshal(data)
 	if err != nil {
@@ -28,13 +41,13 @@ func HandleOperation(data interface{}, room *types.Room, userID string) {
 	
 	switch op.Type {
 	case types.CreateShape:
-		createShape(op, room, userID)
+		createShape(op, room, userID, h.db, h.isPersistent)
 
 	case types.UpdateShape:
-		updateShape(op, room, userID)
+		updateShape(op, room, userID, h.db, h.isPersistent)
 
 	case types.DeleteShape:
-		deleteShape(op, room, userID)
+		deleteShape(op, room, userID, h.db, h.isPersistent)
 
 	case types.SelectShape:
 		room.Mutex.Lock()
@@ -68,7 +81,7 @@ func HandleOperation(data interface{}, room *types.Room, userID string) {
 	room.Mutex.Unlock()
 }
 
-func HandleUndo(data interface{}, room *types.Room, userID string) {
+func (h *EventHandler) HandleUndo(data interface{}, room *types.Room, userID string) {
     room.Mutex.Lock()
     
 	var userIndex int = -1
@@ -111,13 +124,13 @@ func HandleUndo(data interface{}, room *types.Room, userID string) {
 	inverse := op.Inverse
 	log.Printf("Undoing with inverse: %s, data: %+v", inverse.Type.String(), inverse.Data)
 
-    applyOperationToRoomState(inverse, room)
+    applyOperationToRoomState(inverse, room, h.db, h.isPersistent)
 
 	room.Mutex.Unlock()
 	room.BroadcastEvent(inverse.Type.String(), inverse)
 }
 
-func HandleRedo(data interface{}, room *types.Room, userID string) {
+func (h *EventHandler) HandleRedo(data interface{}, room *types.Room, userID string) {
 	room.Mutex.Lock()
 
 	var userIndex int = -1
@@ -151,7 +164,7 @@ func HandleRedo(data interface{}, room *types.Room, userID string) {
 
 	log.Println("Redoing with operation:", op.Type.String(), op.Data)
 
-	applyOperationToRoomState(&op, room)
+	applyOperationToRoomState(&op, room, h.db, h.isPersistent)
 
 	room.Mutex.Unlock()
 	room.BroadcastEvent(op.Type.String(), op)

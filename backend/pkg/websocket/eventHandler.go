@@ -5,12 +5,14 @@ import (
 	"log"
 
 	"github.com/gorilla/websocket"
+	"github.com/xcurx/canco-backend/internal/database"
 	"github.com/xcurx/canco-backend/internal/types"
+	"github.com/xcurx/canco-backend/pkg/events"
 )
 
-
-func HandleEvents(conn *websocket.Conn, room *types.Room, userID string) {
+func HandleEvents(conn *websocket.Conn, room *types.Room, userID string, db *database.DB, isPersistent bool) {
 	log.Println("Starting event handler for room ID:", room.ID)
+	eventHandler := events.New(db, isPersistent)
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
@@ -28,15 +30,15 @@ func HandleEvents(conn *websocket.Conn, room *types.Room, userID string) {
 		switch event.Type {
 		case "operation":
 			log.Println("Handling operation event")
-			HandleOperation(event.Data, room, userID)
+			eventHandler.HandleOperation(event.Data, room, userID)
 
 		case "undo": 
 			log.Println("Handling undo event")
-			HandleUndo(event.Data, room, userID)
+			eventHandler.HandleUndo(event.Data, room, userID)
 
 		case "redo":
 			log.Println("Handling redo event")
-			HandleRedo(event.Data, room, userID)
+			eventHandler.HandleRedo(event.Data, room, userID)
 		}
 	}
 }

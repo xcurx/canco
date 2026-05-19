@@ -3,11 +3,12 @@ package server
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/xcurx/canco-backend/pkg/websocket"
+	"github.com/xcurx/canco-backend/internal/database"
 	"github.com/xcurx/canco-backend/internal/handlers"
+	"github.com/xcurx/canco-backend/pkg/websocket"
 )
 
-func InitializeServer() *gin.Engine {
+func InitializeServer(db *database.DB) *gin.Engine {
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
 			AllowOrigins: []string{"*"},
@@ -16,6 +17,8 @@ func InitializeServer() *gin.Engine {
 			AllowCredentials: true,
 			MaxAge: 300,
 	}))
+
+	wsHandler := websocketPkg.New(db)
 
     r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -26,7 +29,7 @@ func InitializeServer() *gin.Engine {
 	api := r.Group("/api")
 	{
 		api.POST("/createRoom", handlers.CreateRoom)
-		api.GET("/join/:canvasID", websocketPkg.Connect)
+		api.GET("/join/:canvasID", wsHandler.Connect)
 	}
 	return r
 }

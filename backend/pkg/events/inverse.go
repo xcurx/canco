@@ -1,9 +1,10 @@
-package websocketPkg
+package events
 
 import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/xcurx/canco-backend/internal/database"
 	"github.com/xcurx/canco-backend/internal/types"
 )
 
@@ -194,7 +195,7 @@ func computeDeselectAllInverse(state types.RoomState) *types.Operation {
     }
 }
 
-func applyOperationToRoomState(op *types.Operation, room *types.Room) {
+func applyOperationToRoomState(op *types.Operation, room *types.Room, db *database.DB, isPersistent bool) {
 	switch op.Type {
 	case types.DeleteShape:
 		data, ok := op.Data.(map[string]interface{})
@@ -205,6 +206,10 @@ func applyOperationToRoomState(op *types.Operation, room *types.Room) {
 		shapeID, ok := data["id"].(string)
 		if !ok {
 			return
+		}
+
+		if isPersistent {
+			go delete_shape(shapeID, room.ID, db)
 		}
 
 		for i, shape := range room.RoomState.Shapes {
@@ -252,6 +257,10 @@ func applyOperationToRoomState(op *types.Operation, room *types.Room) {
 		if z, ok := shapeData["zIndex"].(float64); ok {
 			shape.ZIndex = int(z)
 		}
+
+		if isPersistent {
+			go create_shape(shape, room.ID, db)
+		}
 		room.RoomState.Shapes = append(room.RoomState.Shapes, shape)
 
 	case types.UpdateShape:
@@ -263,23 +272,37 @@ func applyOperationToRoomState(op *types.Operation, room *types.Room) {
 		if !ok {
 			return
 		}
-		changes, ok := data["changes"].(map[string]interface{})
+		changes, ok := data["changes"].(types.PartialShape)
 		if !ok {
 			return
 		}
+
+		if isPersistent {
+			go update_shape(changes, room.ID, db)
+		}
+		
 		for i, shape := range room.RoomState.Shapes {
 			if shape.ID == shapeID {
-				if x, ok := changes["x"].(float64); ok {
-					room.RoomState.Shapes[i].X = int(x)
+				if changes.X != nil {
+					room.RoomState.Shapes[i].X = *changes.X
 				}
-				if y, ok := changes["y"].(float64); ok {
-					room.RoomState.Shapes[i].Y = int(y)
+				if changes.Y != nil {
+					room.RoomState.Shapes[i].Y = *changes.Y
 				}
-				if w, ok := changes["width"].(float64); ok {
-					room.RoomState.Shapes[i].Width = int(w)
+				if changes.Width != nil {
+					room.RoomState.Shapes[i].Width = *changes.Width
 				}
-				if h, ok := changes["height"].(float64); ok {
-					room.RoomState.Shapes[i].Height = int(h)
+				if changes.Height != nil {
+					room.RoomState.Shapes[i].Height = *changes.Height
+				}
+				if changes.Color != nil {
+					room.RoomState.Shapes[i].Color = *changes.Color
+				}
+				if changes.IsSelected != nil {
+					room.RoomState.Shapes[i].IsSelected = *changes.IsSelected
+				}
+				if changes.ZIndex != nil {
+					room.RoomState.Shapes[i].ZIndex = *changes.ZIndex
 				}
 				break
 			}
