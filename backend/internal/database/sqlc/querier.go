@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	CheckCanvasAccess(ctx context.Context, arg CheckCanvasAccessParams) (bool, error)
 	DeleteShape(ctx context.Context, arg DeleteShapeParams) error
 	GetShape(ctx context.Context, id string) (GetShapeRow, error)
 	GetShapesByCanvasId(ctx context.Context, canvasid string) ([]GetShapesByCanvasIdRow, error)

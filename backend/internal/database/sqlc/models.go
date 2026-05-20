@@ -5,8 +5,53 @@
 package sqlc
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type Visibility string
+
+const (
+	VisibilityPRIVATE Visibility = "PRIVATE"
+	VisibilityPUBLIC  Visibility = "PUBLIC"
+)
+
+func (e *Visibility) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Visibility(s)
+	case string:
+		*e = Visibility(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Visibility: %T", src)
+	}
+	return nil
+}
+
+type NullVisibility struct {
+	Visibility Visibility `json:"Visibility"`
+	Valid      bool       `json:"valid"` // Valid is true if Visibility is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullVisibility) Scan(value interface{}) error {
+	if value == nil {
+		ns.Visibility, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Visibility.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullVisibility) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.Visibility), nil
+}
 
 type Account struct {
 	UserId            string           `json:"userId"`
@@ -25,8 +70,17 @@ type Account struct {
 }
 
 type Canva struct {
+	ID         string           `json:"id"`
+	Name       string           `json:"name"`
+	UserId     string           `json:"userId"`
+	CreatedAt  pgtype.Timestamp `json:"createdAt"`
+	UpdatedAt  pgtype.Timestamp `json:"updatedAt"`
+	Visibility Visibility       `json:"visibility"`
+}
+
+type CanvasShare struct {
 	ID        string           `json:"id"`
-	Name      string           `json:"name"`
+	CanvasId  string           `json:"canvasId"`
 	UserId    string           `json:"userId"`
 	CreatedAt pgtype.Timestamp `json:"createdAt"`
 	UpdatedAt pgtype.Timestamp `json:"updatedAt"`

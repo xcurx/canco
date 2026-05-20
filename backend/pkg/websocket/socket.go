@@ -9,6 +9,7 @@ import (
 	"github.com/xcurx/canco-backend/internal/auth"
 	"github.com/xcurx/canco-backend/internal/config"
 	"github.com/xcurx/canco-backend/internal/database"
+	"github.com/xcurx/canco-backend/internal/database/sqlc"
 	"github.com/xcurx/canco-backend/internal/types"
 )
 
@@ -17,7 +18,7 @@ type Handler struct {
 }
 
 func New(db *database.DB) *Handler {
-    return &Handler{db: db}
+	return &Handler{db: db}
 }
 
 func (h *Handler) Connect(c *gin.Context) {
@@ -39,6 +40,21 @@ func (h *Handler) Connect(c *gin.Context) {
 		// no token means its a local connection
 		userId = "guest_" + c.ClientIP()
 		isPersistent = false
+	}
+
+	if isPersistent {
+		access, err := h.db.Queries.CheckCanvasAccess(c.Request.Context(), sqlc.CheckCanvasAccessParams{
+			ID:     c.Param("canvasID"),
+			UserId: userId,
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
+		if !access {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Canvas not found"})
+			return
+		}
 	}
 
 	roomID := c.Param("canvasID")
