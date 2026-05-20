@@ -11,6 +11,7 @@ import {
     isPointInShapeInterior 
 } from './selection'
 import { ToolManager } from './tools'
+import { Camera } from './camera'
 
 export type InteractionCallbacks = {
     onStateChange: (state: CanvasStateEnum) => void
@@ -18,6 +19,7 @@ export type InteractionCallbacks = {
     onUpdateTempShape: (shape: ShapeData | null) => void
     onUndo: () => void
     onRedo: () => void
+    onCameraChange: () => void
 }
 
 export class InteractionManager {
@@ -30,16 +32,37 @@ export class InteractionManager {
     private tempShape: ShapeData | null = null
     private originalShape: ShapeData | null = null
 
+    private lastPanPoint: {x: number, y: number} | null = null
+
     constructor(
         private canvas: HTMLCanvasElement,
         private callbacks: InteractionCallbacks,
         private getCanvasState: () => CanvasState,
-        private toolManager: ToolManager
+        private toolManager: ToolManager,
+        private camera: Camera
     ) {
         this.addEventListeners()
     }
 
-    handleMouseDown(coords: CanvasCoords): void {
+    handleMouseDown(coords: CanvasCoords, e: MouseEvent): void {
+        if (e.button == 2) {
+            e.preventDefault()
+            return
+        }
+
+        if (e.button == 1) {
+            this.state = CanvasStateEnum.PANNING
+        }
+
+        if (this.state == CanvasStateEnum.PANNING) {
+            this.lastPanPoint = {
+                x: e.clientX,
+                y: e.clientY
+            }
+            this.canvas.style.cursor = 'grabbing'
+            return
+        }
+
         this.startPoint = coords
         const canvasState = this.getCanvasState()
         
@@ -65,7 +88,7 @@ export class InteractionManager {
         this.handleEmptySpaceClick(coords)
     }
 
-    handleMouseMove(coords: CanvasCoords): void {
+    handleMouseMove(coords: CanvasCoords, e: MouseEvent): void {
         switch (this.state) {
             case CanvasStateEnum.CREATING_SHAPE:
                 this.handleCreateShapeMove(coords)
@@ -77,6 +100,10 @@ export class InteractionManager {
 
             case CanvasStateEnum.RESIZING_OBJECT:
                 this.handleResizeObjectMove(coords)
+                break
+
+            case CanvasStateEnum.PANNING:
+                this.handlePanMove(e);
                 break
 
             case CanvasStateEnum.IDLE:
@@ -97,9 +124,36 @@ export class InteractionManager {
             case CanvasStateEnum.RESIZING_OBJECT:
                 this.finishResizeShape(coords)
                 break
+            
+            case CanvasStateEnum.PANNING:
+                this.finishPan()
+                break
         }
 
         this.resetInteractionState()
+    }
+
+    handleWheel(e: WheelEvent): void {
+        e.preventDefault()
+
+        const rect = this.canvas.getBoundingClientRect()
+        const mouseX = e.clientX - rect.left
+        const mouseY = e.clientY - rect.top
+        
+        // mouse pos in world spcce before zooming
+        const worldBefore = this.camera.screenToWorld(mouseX, mouseY)
+        
+        const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9
+        this.camera.scale *= zoomFactor
+
+        this.camera.scale = Math.max(0.1, Math.min(10, this.camera.scale))
+
+        const worldAfter = this.camera.screenToWorld(mouseX, mouseY)
+        
+        this.camera.offsetX += (worldAfter.x - worldBefore.x)
+        this.camera.offsetY += (worldAfter.y - worldBefore.y)
+
+        this.callbacks.onCameraChange()
     }
 
     handleKeyDown(e: KeyboardEvent): void {
@@ -107,6 +161,13 @@ export class InteractionManager {
         const handled = this.processKeyboardShortcut(e)
         if (handled) {
             e.preventDefault()
+        }
+    }
+
+    handleKeyUp(e: KeyboardEvent): void {
+        if (e.code === 'Space') {
+            this.state = CanvasStateEnum.IDLE
+            this.canvas.style.cursor = 'default'
         }
     }
 
@@ -122,7 +183,9 @@ export class InteractionManager {
         this.canvas.removeEventListener("mousedown", this.onMouseDown)
         this.canvas.removeEventListener("mousemove", this.onMouseMove)
         this.canvas.removeEventListener("mouseup", this.onMouseUp)
+        this.canvas.removeEventListener("wheel", this.onWheel)
         removeEventListener("keydown", this.onKeyDown)
+        removeEventListener("keyup", this.onKeyUp)
     }
 
     private handleResizeHandleClick(coords: CanvasCoords, selectedShape: ShapeData): boolean {
@@ -226,6 +289,15 @@ export class InteractionManager {
         }
     }
 
+    private handlePanMove(e: MouseEvent): void {
+        if (this.state == CanvasStateEnum.PANNING && this.lastPanPoint) {
+            this.camera.offsetX += (e.clientX - this.lastPanPoint.x) / this.camera.scale
+            this.camera.offsetY += (e.clientY - this.lastPanPoint.y) / this.camera.scale
+            this.lastPanPoint = { x: e.clientX, y: e.clientY }
+            this.callbacks.onCameraChange()
+        }
+    }
+
     private finishCreateShape(): void {
         if (this.tempShape && this.toolManager.isShapeViable(this.tempShape)) {
             this.callbacks.onApplyOperation(CanvasState.createShape(this.tempShape), true)
@@ -250,6 +322,14 @@ export class InteractionManager {
         if (selectedShape && this.resizeHandle) {
             const newDimensions = this.calculateResize(selectedShape, this.resizeHandle, coords)
             this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, newDimensions), true, this.originalShape ?? undefined)
+        }
+    }
+
+    private finishPan(): void {
+        if (this.state == CanvasStateEnum.PANNING) {
+            this.state = CanvasStateEnum.IDLE
+            this.lastPanPoint = null
+            this.canvas.style.cursor = 'default'
         }
     }
 
@@ -356,6 +436,12 @@ export class InteractionManager {
             return true
         }
 
+        if (e.code === 'Space') {
+            this.state = CanvasStateEnum.PANNING
+            this.canvas.style.cursor = 'grab'
+            return true
+        }
+
         return false
     }
 
@@ -375,18 +461,20 @@ export class InteractionManager {
         this.canvas.addEventListener("mousedown", this.onMouseDown)
         this.canvas.addEventListener("mousemove", this.onMouseMove)
         this.canvas.addEventListener("mouseup", this.onMouseUp)
+        this.canvas.addEventListener("wheel", this.onWheel, { passive: false })
         addEventListener("keydown", this.onKeyDown)
+        addEventListener("keyup", this.onKeyUp)
     }
 
     // event handler wrappers to maintain 'this' context
     private onMouseDown = (e: MouseEvent) => {
         const coords = this.getCanvasCoordinates(e)
-        this.handleMouseDown(coords)
+        this.handleMouseDown(coords, e)
     }
 
     private onMouseMove = (e: MouseEvent) => {
         const coords = this.getCanvasCoordinates(e)
-        this.handleMouseMove(coords)
+        this.handleMouseMove(coords, e)
     }
 
     private onMouseUp = (e: MouseEvent) => {
@@ -398,11 +486,19 @@ export class InteractionManager {
         this.handleKeyDown(e)
     }
 
+    private onKeyUp = (e: KeyboardEvent) => {
+        this.handleKeyUp(e)
+    }
+
+    private onWheel = (e: WheelEvent) => {
+        e.preventDefault()
+        this.handleWheel(e)
+    }
+
     private getCanvasCoordinates(e: MouseEvent): CanvasCoords {
         const rect = this.canvas.getBoundingClientRect()
-        return {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top
-        }
+        const sx = e.clientX - rect.left
+        const sy = e.clientY - rect.top
+        return this.camera.screenToWorld(sx, sy)
     }
 }

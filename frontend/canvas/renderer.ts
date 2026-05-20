@@ -5,6 +5,7 @@ import { HistoryCallbacks, HistoryManager } from './history'
 import { ToolManager } from './tools'
 import { InteractionManager, InteractionCallbacks } from './interaction'
 import { Socket, Message } from '../websocket/socket'
+import { Camera } from './camera'
 
 export class Renderer {
     private ctx: CanvasRenderingContext2D
@@ -15,6 +16,7 @@ export class Renderer {
     private historyManager: HistoryManager
     private toolManager: ToolManager = new ToolManager()
     private interactionManager: InteractionManager
+    private camera: Camera = new Camera()
     
     private tempShape: ShapeData | null = null
     private currentInteractionState: CanvasStateEnum = CanvasStateEnum.IDLE
@@ -31,7 +33,8 @@ export class Renderer {
             onApplyOperation: (operation, saveToHistory, originalShape) => this.applyOperation(operation, false, saveToHistory, originalShape),
             onUpdateTempShape: (shape) => this.updateTempShape(shape),
             onUndo: () => this.undo(),
-            onRedo: () => this.redo()
+            onRedo: () => this.redo(),
+            onCameraChange: () => this.render()
         }
         
         this.historyManager = new HistoryManager(() => this.canvasState)
@@ -39,7 +42,8 @@ export class Renderer {
             canvas,
             callbacks,
             () => this.canvasState,
-            this.toolManager
+            this.toolManager,
+            this.camera
         )
 
         const url = this.roomId ? `ws://localhost:8080/api/join/${this.roomId}` : undefined
@@ -150,6 +154,16 @@ export class Renderer {
 
     render(): void {
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height)
+
+        this.ctx.save()
+        this.ctx.setTransform(
+            this.camera.scale,
+            0,
+            0,
+            this.camera.scale,
+            this.camera.offsetX * this.camera.scale,
+            this.camera.offsetY * this.camera.scale
+        )
         
         const shapes = this.canvasState.getAllShapes()
         shapes.forEach(shape => {
@@ -159,6 +173,8 @@ export class Renderer {
         if (this.tempShape) {
             renderShape(this.ctx, this.tempShape)
         }
+
+        this.ctx.restore()
     }
 
     private updateCursor(state: CanvasStateEnum): void {

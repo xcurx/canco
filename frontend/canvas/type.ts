@@ -73,7 +73,8 @@ export enum CanvasState {
     IDLE = "idle",
     CREATING_SHAPE = "creating_shape", 
     MOVING_OBJECT = "moving_object",
-    RESIZING_OBJECT = "resizing_object"
+    RESIZING_OBJECT = "resizing_object",
+    PANNING = "panning",
 }
 
 export const SELECTION_PADDING = 5
