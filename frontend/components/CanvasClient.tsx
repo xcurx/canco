@@ -10,6 +10,7 @@ import { RendererContext } from "@/components/renderer-context";
 interface CanvasClientProps {
   roomId: string;
   isAuthed: boolean;
+  isOwner: boolean;
   signInAction: (formData: FormData) => Promise<void>;
   signOutAction: (formData: FormData) => Promise<void>;
   token: string | undefined;
@@ -18,6 +19,7 @@ interface CanvasClientProps {
 export default function CanvasClient({
   roomId,
   isAuthed,
+  isOwner,
   signInAction,
   signOutAction,
   token,
@@ -32,6 +34,7 @@ export default function CanvasClient({
           <Collaborate
             roomId={roomId}
             isAuthed={isAuthed}
+            isOwner={isOwner}
             signInAction={signInAction}
             signOutAction={signOutAction}
             token={token}

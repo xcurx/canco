@@ -29,6 +29,7 @@ export default async function CanvasPage(context : { params: Promise<{ roomId: s
     <CanvasClient
       roomId={roomId}
       isAuthed={false}
+      isOwner={false}
       signInAction={signInWithGoogle}
       signOutAction={async () => { "use server" }}
       token={undefined}

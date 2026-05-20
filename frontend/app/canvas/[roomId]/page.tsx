@@ -43,11 +43,13 @@ export default async function CanvasPage(context : { params: Promise<{ roomId: s
     cookieStore.get("authjs.session-token") || 
     cookieStore.get("__Secure-authjs.session-token")
 
+  const isOwner = cavas.userId === session.user.id;
 
   return (
     <CanvasClient
       roomId={roomId}
       isAuthed={true}
+      isOwner={isOwner}
       signInAction={signInWithGoogle}
       signOutAction={signOutUser}
       token={tokenCookie?.value}

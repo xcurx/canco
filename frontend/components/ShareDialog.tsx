@@ -49,9 +49,10 @@ interface SearchResult {
 interface ShareDialogProps {
   roomId: string;
   isLocal: boolean;
+  isOwner: boolean;
 }
 
-export default function ShareDialog({ roomId, isLocal }: ShareDialogProps) {
+export default function ShareDialog({ roomId, isLocal, isOwner }: ShareDialogProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [visibility, setVisibility] = useState<"PRIVATE" | "PUBLIC">("PRIVATE");
@@ -194,7 +195,7 @@ export default function ShareDialog({ roomId, isLocal }: ShareDialogProps) {
     }
   };
 
-  if (isLocal) {
+  if (isLocal || !isOwner) {
     return (
       <Button
         size="sm"

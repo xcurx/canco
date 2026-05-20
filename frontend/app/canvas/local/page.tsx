@@ -11,6 +11,7 @@ export default function LocalCanvasPage() {
     <CanvasClient
         roomId="local"
         isAuthed={false}
+        isOwner={false}
         signInAction={signInWithGoogle}
         signOutAction={async () => { "use server" }}
         token={undefined}

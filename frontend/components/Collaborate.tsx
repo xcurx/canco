@@ -6,7 +6,6 @@ import {
 } from "@/components/ui/popover"
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
 import { RendererContext } from '@/components/renderer-context'
 import { Spinner } from '@/components/ui/spinner';
 import { Users } from 'lucide-react';
@@ -15,12 +14,13 @@ import ShareDialog from './ShareDialog';
 interface CollaborateProps {
     roomId: string;
     isAuthed: boolean;
+    isOwner: boolean;
     signInAction: (formData: FormData) => Promise<void>;
     signOutAction: (formData: FormData) => Promise<void>;
     token: string | undefined;
 }
 
-const Collaborate = ({ roomId, isAuthed, signInAction, signOutAction, token }: CollaborateProps) => {
+const Collaborate = ({ roomId, isAuthed, isOwner, signInAction, signOutAction, token }: CollaborateProps) => {
     const [isJoined, setIsJoined] = useState(false);
     const [activeRoomId, setActiveRoomId] = useState<string>(roomId);
     const { renderer } = useContext(RendererContext);
@@ -114,7 +114,7 @@ const Collaborate = ({ roomId, isAuthed, signInAction, signOutAction, token }: C
                 (!loading && isJoined) ? (
                     <>
                         <div className='flex flex-col gap-2 items-center w-full'>
-                            <ShareDialog roomId={activeRoomId} isLocal={!isAuthed && roomId === "local"} />
+                            <ShareDialog roomId={activeRoomId} isLocal={!isAuthed && roomId === "local"} isOwner={isOwner} />
                         </div>
                         <Separator/>
                         <Button
