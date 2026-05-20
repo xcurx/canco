@@ -23,10 +23,14 @@ export default async function CanvasPage(context : { params: Promise<{ roomId: s
 
   const { roomId } = await context.params
   
-  const cavas = await prisma.canvas.findUnique({
+  const cavas = await prisma.canvas.findFirst({
     where: {
       id: roomId,
-      userId: session.user.id,
+      OR: [
+        { userId: session.user.id },
+        { canvasShares: { some: { userId: session.user.id } } },
+        { visibility: "PUBLIC" }
+      ],
     },
   });
 
