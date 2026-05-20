@@ -22,6 +22,7 @@ model User {
   sessions      Session[]
 
   Canvas        Canvas[]
+  canvasShares   CanvasShare[]
  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -72,9 +73,28 @@ model Canvas {
   Shapes   Shape[]
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  canvasShares CanvasShare[]
+  visibility Visibility @default(PRIVATE)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model CanvasShare {
+  id        String   @id @default(cuid())
+  canvasId  String
+  userId    String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  canvas Canvas @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum Visibility {
+  PRIVATE
+  PUBLIC
 }
 
 model Shape {

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { RendererContext } from '@/components/renderer-context'
 import { Spinner } from '@/components/ui/spinner';
 import { Users } from 'lucide-react';
+import ShareDialog from './ShareDialog';
 
 interface CollaborateProps {
     roomId: string;
@@ -112,21 +113,8 @@ const Collaborate = ({ roomId, isAuthed, signInAction, signOutAction, token }: C
             {
                 (!loading && isJoined) ? (
                     <>
-                        <div className='flex flex-col gap-2 items-center'>
-                            <Button
-                             size='sm' 
-                             className='bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200'
-                             onClick={() => {
-                                navigator.clipboard.writeText(`http://localhost:3000/canvas/${activeRoomId}`);
-                                toast.success("Copied to clipboard", {
-                                    className: "bg-gradient-to-br from-blue-600 to-purple-600 text-white border-none",
-                                    description: "Share the link to invite others."
-                                });
-                             }}
-                            >
-                                Share
-                            </Button>
-                            <p className='text-xs text-center'>Share the link to invite others to join the session.</p>
+                        <div className='flex flex-col gap-2 items-center w-full'>
+                            <ShareDialog roomId={activeRoomId} isLocal={!isAuthed && roomId === "local"} />
                         </div>
                         <Separator/>
                         <Button
