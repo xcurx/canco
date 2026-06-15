@@ -49,7 +49,6 @@ type Shape struct {
 	Width      int    `json:"width"`
 	Height     int    `json:"height"`
 	Color      string `json:"color"`
-	IsSelected bool   `json:"isSelected"`
 	ZIndex     int    `json:"zIndex"`
 }
 type PartialShape struct {

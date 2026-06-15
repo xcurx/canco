@@ -17,10 +17,6 @@ func ComputeInverse(op types.Operation, state types.RoomState) *types.Operation 
 		return computeUpdateInverse(op, state)
 	case types.DeleteShape:
 		return computeDeleteInverse(op, state)
-	case types.SelectShape:
-		return computeSelectInverse(op, state)
-	case types.DeselectAll:
-		return computeDeselectAllInverse(state)
 	default:
 		return nil
 	}
@@ -126,8 +122,6 @@ func computeUpdateInverse(op types.Operation, state types.RoomState) *types.Oper
 			inverseChanges["height"] = currentShape.Height
 		case "color":
 			inverseChanges["color"] = currentShape.Color
-		case "isSelected":
-			inverseChanges["isSelected"] = currentShape.IsSelected
 		case "zIndex":
 			inverseChanges["zIndex"] = currentShape.ZIndex
 		}
@@ -142,57 +136,6 @@ func computeUpdateInverse(op types.Operation, state types.RoomState) *types.Oper
 			"changes": inverseChanges,
 		},
 	}
-}
-
-func computeSelectInverse(op types.Operation, state types.RoomState) *types.Operation {
-	var previouslySelected string
-	for _, shape := range state.Shapes {
-		if shape.IsSelected {
-			previouslySelected = shape.ID
-			break
-		}
-	}
-
-	if previouslySelected == "" {
-		return &types.Operation{
-			ID:        uuid.New().String(),
-			Type:      types.DeselectAll,
-			Timestamp: time.Now().UnixMilli(),
-			Data: map[string]interface{}{},
-		}
-	}
-
-	return &types.Operation{
-		ID:        uuid.New().String(),
-		Type:      types.SelectShape,
-		Timestamp: time.Now().UnixMilli(),
-		Data: map[string]interface{}{
-			"id": previouslySelected,
-		},
-	}
-}
-
-func computeDeselectAllInverse(state types.RoomState) *types.Operation {
-    var selectedID string
-    for _, shape := range state.Shapes {
-        if shape.IsSelected {
-            selectedID = shape.ID
-            break
-        }
-    }
-
-    if selectedID == "" {
-        return nil
-    }
-
-    return &types.Operation{
-        ID:        uuid.New().String(),
-        Type:      types.SelectShape,
-        Timestamp: time.Now().UnixMilli(),
-        Data: map[string]interface{}{
-            "id": selectedID,
-        },
-    }
 }
 
 func applyOperationToRoomState(op *types.Operation, room *types.Room, db *database.DB, isPersistent bool) {
@@ -297,9 +240,6 @@ func applyOperationToRoomState(op *types.Operation, room *types.Room, db *databa
 				}
 				if changes.Color != nil {
 					room.RoomState.Shapes[i].Color = *changes.Color
-				}
-				if changes.IsSelected != nil {
-					room.RoomState.Shapes[i].IsSelected = *changes.IsSelected
 				}
 				if changes.ZIndex != nil {
 					room.RoomState.Shapes[i].ZIndex = *changes.ZIndex

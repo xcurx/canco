@@ -132,9 +132,6 @@ func updateShape(op types.Operation, room *types.Room, userID string, db *databa
 			if changes.Color != nil {
 				shape.Color = *changes.Color
 			}
-			if changes.IsSelected != nil {
-				shape.IsSelected = *changes.IsSelected
-			}
 			room.RoomState.Shapes[i] = shape
 			break
 		}
