@@ -44,20 +44,20 @@ type RoomManager struct {
 type Shape struct {
 	ID         string `json:"id"`
 	Type       string `json:"type"`
-	X          int    `json:"x"`
-	Y          int    `json:"y"`
-	Width      int    `json:"width"`
-	Height     int    `json:"height"`
+	X          float64    `json:"x"`
+	Y          float64    `json:"y"`
+	Width      float64    `json:"width"`
+	Height     float64    `json:"height"`
 	Color      string `json:"color"`
 	ZIndex     int    `json:"zIndex"`
 }
 type PartialShape struct {
 	ID         *string `json:"id,omitempty"`
 	Type       *string `json:"type,omitempty"`
-	X          *int    `json:"x,omitempty"`
-	Y          *int    `json:"y,omitempty"`
-	Width      *int    `json:"width,omitempty"`
-	Height     *int    `json:"height,omitempty"`
+	X          *float64    `json:"x,omitempty"`
+	Y          *float64    `json:"y,omitempty"`
+	Width      *float64    `json:"width,omitempty"`
+	Height     *float64    `json:"height,omitempty"`
 	Color      *string `json:"color,omitempty"`
 	IsSelected *bool   `json:"isSelected,omitempty"`
 	ZIndex     *int    `json:"zIndex,omitempty"`

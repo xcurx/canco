@@ -183,16 +183,16 @@ func applyOperationToRoomState(op *types.Operation, room *types.Room, db *databa
 			shape.Type = t
 		}
 		if x, ok := shapeData["x"].(float64); ok {
-			shape.X = int(x)
+			shape.X = float64(x)
 		}
 		if y, ok := shapeData["y"].(float64); ok {
-			shape.Y = int(y)
+			shape.Y = float64(y)
 		}
 		if w, ok := shapeData["width"].(float64); ok {
-			shape.Width = int(w)
+			shape.Width = float64(w)
 		}
 		if h, ok := shapeData["height"].(float64); ok {
-			shape.Height = int(h)
+			shape.Height = float64(h)
 		}
 		if c, ok := shapeData["color"].(string); ok {
 			shape.Color = c
