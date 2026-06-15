@@ -8,7 +8,7 @@ import {
     LineData
 } from './type'
 
-export function getResizeHandles(shape: ShapeData): Array<{x: number, y: number, type: string}> {
+export function getResizeHandles(shape: ShapeData, scale: number = 1): Array<{x: number, y: number, type: string}> {
     if (shape.type === 'line') {
         return [
             { x: shape.x, y: shape.y, type: 'start' },
@@ -16,15 +16,17 @@ export function getResizeHandles(shape: ShapeData): Array<{x: number, y: number,
         ]
     }
 
+    const padding = SELECTION_PADDING / scale
+     
     return [
-        { x: shape.x - SELECTION_PADDING, y: shape.y - SELECTION_PADDING, type: 'top-left' },
-        { x: shape.x + shape.width / 2, y: shape.y - SELECTION_PADDING, type: 'top-middle' },
-        { x: shape.x + shape.width + SELECTION_PADDING, y: shape.y - SELECTION_PADDING, type: 'top-right' },
-        { x: shape.x - SELECTION_PADDING, y: shape.y + shape.height / 2, type: 'middle-left' },
-        { x: shape.x + shape.width + SELECTION_PADDING, y: shape.y + shape.height / 2, type: 'middle-right' },
-        { x: shape.x - SELECTION_PADDING, y: shape.y + shape.height + SELECTION_PADDING, type: 'bottom-left' },
-        { x: shape.x + shape.width / 2, y: shape.y + shape.height + SELECTION_PADDING, type: 'bottom-middle' },
-        { x: shape.x + shape.width + SELECTION_PADDING, y: shape.y + shape.height + SELECTION_PADDING, type: 'bottom-right' }
+        { x: shape.x - padding, y: shape.y - padding, type: 'top-left' },
+        { x: shape.x + shape.width / 2, y: shape.y - padding, type: 'top-middle' },
+        { x: shape.x + shape.width + padding, y: shape.y - padding, type: 'top-right' },
+        { x: shape.x - padding, y: shape.y + shape.height / 2, type: 'middle-left' },
+        { x: shape.x + shape.width + padding, y: shape.y + shape.height / 2, type: 'middle-right' },
+        { x: shape.x - padding, y: shape.y + shape.height + padding, type: 'bottom-left' },
+        { x: shape.x + shape.width / 2, y: shape.y + shape.height + padding, type: 'bottom-middle' },
+        { x: shape.x + shape.width + padding, y: shape.y + shape.height + padding, type: 'bottom-right' }
     ]
 }
 
@@ -111,18 +113,18 @@ function isPointInCircle(coords: CanvasCoords, circle: CircleData): boolean {
     return distanceSquared >= (1 - 0.15) && distanceSquared <= (1 + 0.15)
 }
 
-export function isPointInHandle(coords: CanvasCoords, handle: {x: number, y: number, type: string}): boolean {
+export function isPointInHandle(coords: CanvasCoords, handle: {x: number, y: number, type: string}, scale: number = 1): boolean {
     const distance = Math.sqrt(
         Math.pow(coords.x - handle.x, 2) + Math.pow(coords.y - handle.y, 2)
     )
-    return distance <= HANDLE_SIZE + 4
+    return distance <= (HANDLE_SIZE + 4) / scale
 }
 
-export function getClickedHandle(coords: CanvasCoords, shape: ShapeData): { x: number, y: number, type: string } | null {
-    const handles = getResizeHandles(shape)
+export function getClickedHandle(coords: CanvasCoords, shape: ShapeData, scale: number = 1): { x: number, y: number, type: string } | null {
+    const handles = getResizeHandles(shape, scale)
 
     for (const handle of handles) {
-        if (isPointInHandle(coords, handle)) {
+        if (isPointInHandle(coords, handle, scale)) {
             return handle
         }
     }

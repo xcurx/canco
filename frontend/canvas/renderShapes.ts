@@ -81,23 +81,25 @@ export function renderShape(ctx: CanvasRenderingContext2D, shape: ShapeData): vo
 
 export function drawSelectionCage(ctx: CanvasRenderingContext2D, shape: ShapeData): void {
     ctx.save()
-    const handles = getResizeHandles(shape)
+    const scale = ctx.getTransform().a
+    const handles = getResizeHandles(shape, scale)
 
     if (shape.type !== 'line') {
-        ctx.setLineDash([5, 5])
+        const padding = SELECTION_PADDING / scale;
+        ctx.setLineDash([5 / scale, 5 / scale])
         ctx.strokeStyle = "#007acc"
-        ctx.lineWidth = 1
+        ctx.lineWidth = 1 / scale
         ctx.strokeRect(
-            shape.x - SELECTION_PADDING,
-            shape.y - SELECTION_PADDING,
-            shape.width + SELECTION_PADDING * 2,
-            shape.height + SELECTION_PADDING * 2
+            shape.x - padding,
+            shape.y - padding,
+            shape.width + padding * 2,
+            shape.height + padding * 2
         )
     }
 
     handles.forEach(handle => {
         ctx.beginPath()
-        ctx.arc(handle.x, handle.y, HANDLE_SIZE, 0, 2 * Math.PI)
+        ctx.arc(handle.x, handle.y, HANDLE_SIZE / scale, 0, 2 * Math.PI)
         ctx.fillStyle = '#007acc'
         ctx.fill()
     })

@@ -189,7 +189,7 @@ export class InteractionManager {
     }
 
     private handleResizeHandleClick(coords: CanvasCoords, selectedShape: ShapeData): boolean {
-        const clickedHandle = getClickedHandle(coords, selectedShape)
+        const clickedHandle = getClickedHandle(coords, selectedShape, this.camera.scale)
         if (clickedHandle) {
             this.state = CanvasStateEnum.RESIZING_OBJECT
             this.resizeHandle = clickedHandle
