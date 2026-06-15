@@ -80,6 +80,7 @@ export function renderShape(ctx: CanvasRenderingContext2D, shape: ShapeData): vo
 }
 
 export function drawSelectionCage(ctx: CanvasRenderingContext2D, shape: ShapeData): void {
+    ctx.save()
     const handles = getResizeHandles(shape)
 
     if (shape.type !== 'line') {
@@ -92,7 +93,6 @@ export function drawSelectionCage(ctx: CanvasRenderingContext2D, shape: ShapeDat
             shape.width + SELECTION_PADDING * 2,
             shape.height + SELECTION_PADDING * 2
         )
-        ctx.setLineDash([])
     }
 
     handles.forEach(handle => {
@@ -104,4 +104,6 @@ export function drawSelectionCage(ctx: CanvasRenderingContext2D, shape: ShapeDat
         ctx.lineWidth = 2
         ctx.stroke()
     })
+
+    ctx.restore()
 }
