@@ -100,9 +100,6 @@ export function drawSelectionCage(ctx: CanvasRenderingContext2D, shape: ShapeDat
         ctx.arc(handle.x, handle.y, HANDLE_SIZE, 0, 2 * Math.PI)
         ctx.fillStyle = '#007acc'
         ctx.fill()
-        ctx.strokeStyle = '#ffffff'
-        ctx.lineWidth = 2
-        ctx.stroke()
     })
 
     ctx.restore()
