@@ -69,6 +69,10 @@ export class Renderer {
         console.log(this.getDebugInfo())
 
         if (isSocket) {
+            // we don't care about the selection state of remote shapes.
+            if (operation.type === 'CREATE_SHAPE') {
+                operation.data.shape.isSelected = false
+            }
             this.canvasState = CanvasState.applyOperation(this.canvasState, operation)
             this.render()
             return
