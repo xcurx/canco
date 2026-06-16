@@ -166,6 +166,10 @@ export class Renderer {
         this.applyOperation(CanvasState.updateShape(shapeId, { text: newText }), false, true, originalShape)
     }
 
+    public getCamera() {
+        return this.camera
+    }
+
     render(): void {
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height)
 
