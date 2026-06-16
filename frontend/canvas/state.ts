@@ -7,7 +7,8 @@ import {
     SelectShapeOperation,
     DeselectAllOperation,
     RectangleData,
-    CircleData
+    CircleData,
+    TextData
 } from './type'
 
 export class CanvasState {
@@ -204,5 +205,21 @@ export function createCircleData(x: number, y: number, radiusX: number, radiusY:
         color,
         isSelected: true,
         zIndex: Date.now()
+    }
+}
+
+export function createTextData(x: number, y: number, color: string, text: string = "Text"): TextData {
+    return {
+        id: crypto.randomUUID(),
+        type: 'text',
+        x,
+        y,
+        width: 200,
+        height: 40,
+        color,
+        isSelected: false,
+        zIndex: Date.now(),
+        text,
+        fontSize: 24,
     }
 }
