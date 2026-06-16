@@ -124,6 +124,10 @@ func computeUpdateInverse(op types.Operation, state types.RoomState) *types.Oper
 			inverseChanges["color"] = currentShape.Color
 		case "zIndex":
 			inverseChanges["zIndex"] = currentShape.ZIndex
+		case "text":
+			inverseChanges["text"] = currentShape.Text
+		case "fontSize":
+			inverseChanges["fontSize"] = currentShape.FontSize
 		}
 	}	
 
@@ -199,6 +203,12 @@ func applyOperationToRoomState(op *types.Operation, room *types.Room, db *databa
 		}
 		if z, ok := shapeData["zIndex"].(float64); ok {
 			shape.ZIndex = int(z)
+		}
+		if t, ok := shapeData["text"].(string); ok {
+			shape.Text = t
+		}
+		if fs, ok := shapeData["fontSize"].(float64); ok {
+			shape.FontSize = fs
 		}
 
 		if isPersistent {
