@@ -38,6 +38,8 @@ export function isPointInShape(coords: CanvasCoords, shape: ShapeData): boolean 
             return isPointInRectangle(coords, shape)
         case 'circle':
             return isPointInCircle(coords, shape)
+        case 'text':
+            return isPointInRectangle(coords, shape as any)
         default:
             return false
     }
@@ -138,6 +140,8 @@ export function isPointInShapeInterior(coords: CanvasCoords, shape: ShapeData): 
             return isPointInRectangleInterior(coords, shape)
         case 'circle':
             return isPointInCircleInterior(coords, shape)
+        case 'text':
+            return isPointInRectangleInterior(coords, shape as any)
         default:
             return false
     }
