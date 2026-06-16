@@ -156,6 +156,16 @@ export class Renderer {
         this.render()
     }
 
+    private onEditTextCallback?: (shape: ShapeData) => void
+
+    public setEditTextCallback(cb: (shape: ShapeData) => void) {
+        this.onEditTextCallback = cb
+    }
+
+    public updateText(shapeId: string, newText: string, originalShape: ShapeData) {
+        this.applyOperation(CanvasState.updateShape(shapeId, { text: newText }), false, true, originalShape)
+    }
+
     render(): void {
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height)
 
