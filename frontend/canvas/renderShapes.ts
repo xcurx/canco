@@ -5,7 +5,8 @@ import {
     LineData,
     RectangleData,
     SELECTION_PADDING,
-    ShapeData
+    ShapeData,
+    TextData
 } from './type'
 
 export function renderLine(ctx: CanvasRenderingContext2D, shape: LineData): void {
@@ -76,6 +77,23 @@ export function renderShape(ctx: CanvasRenderingContext2D, shape: ShapeData): vo
             break
         default:
             console.warn(`Unknown shape type: ${(shape as any).type}`)
+    }
+}
+
+export function renderText(ctx: CanvasRenderingContext2D, shape: TextData): void {
+    ctx.beginPath()
+    ctx.font = `${shape.fontSize}px sans-serif`
+    ctx.fillStyle = shape.color
+    ctx.textBaseline = "top"
+
+    // split on new lines to support multiline text
+    const lines = shape.text.split('\n')
+    lines.forEach((line, index) => {
+        ctx.fillText(line, shape.x, shape.y + index * shape.fontSize * 1.2)  
+    })
+
+    if (shape.isSelected) {
+        drawSelectionCage(ctx, shape)
     }
 }
 
