@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/xcurx/canco-backend/internal/database"
 	"github.com/xcurx/canco-backend/internal/database/sqlc"
 	"github.com/xcurx/canco-backend/internal/types"
@@ -19,6 +20,8 @@ func create_shape(shape types.Shape, roomId string, db *database.DB) {
 		Height: float64(shape.Height),
 		Color: shape.Color,
 		ZIndex: int32(shape.ZIndex),
+		Text: pgtype.Text{String: shape.Text, Valid: shape.Text != ""},
+		FontSize: pgtype.Float8{Float64: shape.FontSize, Valid: shape.FontSize > 0},
 		CanvasId: roomId,
 	})
 	if (err != nil) {
@@ -43,6 +46,8 @@ func update_shape(changes types.PartialShape, roomId string, db *database.DB) {
 	if changes.Height != nil { existing.Height = float64(*changes.Height) }
 	if changes.Color != nil  { existing.Color  = *changes.Color  }
 	if changes.ZIndex != nil { existing.ZIndex = int32(*changes.ZIndex) }
+	if changes.Text != nil   { existing.Text = pgtype.Text{String: *changes.Text, Valid: *changes.Text != ""} }
+	if changes.FontSize != nil { existing.FontSize = pgtype.Float8{Float64: *changes.FontSize, Valid: *changes.FontSize > 0} }
 
 	err = db.Queries.UpsertShape(ctx, sqlc.UpsertShapeParams{
 		ID:       existing.ID,
@@ -53,6 +58,8 @@ func update_shape(changes types.PartialShape, roomId string, db *database.DB) {
 		Height:   existing.Height,
 		Color:    existing.Color,
 		ZIndex:   existing.ZIndex,
+		Text:     existing.Text,
+		FontSize: existing.FontSize,
 		CanvasId: roomId,
 	})
 	if err != nil {
