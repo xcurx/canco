@@ -106,6 +106,8 @@ type Shape struct {
 	CanvasId  string           `json:"canvasId"`
 	CreatedAt pgtype.Timestamp `json:"createdAt"`
 	UpdatedAt pgtype.Timestamp `json:"updatedAt"`
+	FontSize  pgtype.Float8    `json:"fontSize"`
+	Text      pgtype.Text      `json:"text"`
 }
 
 type User struct {

@@ -26,7 +26,7 @@ func (q *Queries) DeleteShape(ctx context.Context, arg DeleteShapeParams) error 
 }
 
 const getShape = `-- name: GetShape :one
-SELECT id, type, x, y, width, height, color, "zIndex", "canvasId", "updatedAt"
+SELECT id, type, x, y, width, height, color, "zIndex", "text", "fontSize", "canvasId", "updatedAt"
 FROM "Shape"
 WHERE id = $1
 `
@@ -40,6 +40,8 @@ type GetShapeRow struct {
 	Height    float64          `json:"height"`
 	Color     string           `json:"color"`
 	ZIndex    int32            `json:"zIndex"`
+	Text      pgtype.Text      `json:"text"`
+	FontSize  pgtype.Float8    `json:"fontSize"`
 	CanvasId  string           `json:"canvasId"`
 	UpdatedAt pgtype.Timestamp `json:"updatedAt"`
 }
@@ -56,6 +58,8 @@ func (q *Queries) GetShape(ctx context.Context, id string) (GetShapeRow, error) 
 		&i.Height,
 		&i.Color,
 		&i.ZIndex,
+		&i.Text,
+		&i.FontSize,
 		&i.CanvasId,
 		&i.UpdatedAt,
 	)
@@ -63,7 +67,7 @@ func (q *Queries) GetShape(ctx context.Context, id string) (GetShapeRow, error) 
 }
 
 const getShapesByCanvasId = `-- name: GetShapesByCanvasId :many
-SELECT id, type, x, y, width, height, color, "zIndex", "canvasId", "updatedAt"
+SELECT id, type, x, y, width, height, color, "zIndex", "text", "fontSize", "canvasId", "updatedAt"
 FROM "Shape"
 WHERE "canvasId" = $1
 `
@@ -77,6 +81,8 @@ type GetShapesByCanvasIdRow struct {
 	Height    float64          `json:"height"`
 	Color     string           `json:"color"`
 	ZIndex    int32            `json:"zIndex"`
+	Text      pgtype.Text      `json:"text"`
+	FontSize  pgtype.Float8    `json:"fontSize"`
 	CanvasId  string           `json:"canvasId"`
 	UpdatedAt pgtype.Timestamp `json:"updatedAt"`
 }
@@ -99,6 +105,8 @@ func (q *Queries) GetShapesByCanvasId(ctx context.Context, canvasid string) ([]G
 			&i.Height,
 			&i.Color,
 			&i.ZIndex,
+			&i.Text,
+			&i.FontSize,
 			&i.CanvasId,
 			&i.UpdatedAt,
 		); err != nil {
@@ -113,8 +121,8 @@ func (q *Queries) GetShapesByCanvasId(ctx context.Context, canvasid string) ([]G
 }
 
 const upsertShape = `-- name: UpsertShape :exec
-INSERT INTO "Shape" (id, type, x, y, width, height, color, "zIndex", "canvasId", "updatedAt") 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+INSERT INTO "Shape" (id, type, x, y, width, height, color, "zIndex", "text", "fontSize", "canvasId", "updatedAt") 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
 ON CONFLICT (id) DO UPDATE 
 SET type = EXCLUDED.type,
     x = EXCLUDED.x,
@@ -123,20 +131,24 @@ SET type = EXCLUDED.type,
     height = EXCLUDED.height,
     color = EXCLUDED.color,
     "zIndex" = EXCLUDED."zIndex",
+    "text" = EXCLUDED."text",
+    "fontSize" = EXCLUDED."fontSize",
     "canvasId" = EXCLUDED."canvasId",
     "updatedAt" = NOW()
 `
 
 type UpsertShapeParams struct {
-	ID       string  `json:"id"`
-	Type     string  `json:"type"`
-	X        float64 `json:"x"`
-	Y        float64 `json:"y"`
-	Width    float64 `json:"width"`
-	Height   float64 `json:"height"`
-	Color    string  `json:"color"`
-	ZIndex   int32   `json:"zIndex"`
-	CanvasId string  `json:"canvasId"`
+	ID       string        `json:"id"`
+	Type     string        `json:"type"`
+	X        float64       `json:"x"`
+	Y        float64       `json:"y"`
+	Width    float64       `json:"width"`
+	Height   float64       `json:"height"`
+	Color    string        `json:"color"`
+	ZIndex   int32         `json:"zIndex"`
+	Text     pgtype.Text   `json:"text"`
+	FontSize pgtype.Float8 `json:"fontSize"`
+	CanvasId string        `json:"canvasId"`
 }
 
 func (q *Queries) UpsertShape(ctx context.Context, arg UpsertShapeParams) error {
@@ -149,6 +161,8 @@ func (q *Queries) UpsertShape(ctx context.Context, arg UpsertShapeParams) error 
 		arg.Height,
 		arg.Color,
 		arg.ZIndex,
+		arg.Text,
+		arg.FontSize,
 		arg.CanvasId,
 	)
 	return err
