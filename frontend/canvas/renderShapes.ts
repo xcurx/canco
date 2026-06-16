@@ -75,6 +75,9 @@ export function renderShape(ctx: CanvasRenderingContext2D, shape: ShapeData): vo
         case 'circle':
             renderCircle(ctx, shape)
             break
+        case 'text':
+            renderText(ctx, shape)
+            break
         default:
             console.warn(`Unknown shape type: ${(shape as any).type}`)
     }

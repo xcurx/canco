@@ -1,7 +1,7 @@
 import { RendererContext } from '@/components/renderer-context'
 import React, { useContext, useEffect, useState } from 'react'
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { RectangleHorizontal, Circle as CircleIcon, LineChartIcon, Undo, Redo } from 'lucide-react'
+import { RectangleHorizontal, Circle as CircleIcon, LineChartIcon, Undo, Redo, Type } from 'lucide-react'
 import { Button } from './ui/button'
 
 const Options = () => {
@@ -35,6 +35,12 @@ const Options = () => {
         if (value === "circle") {
             setCurrentOption("circle")
             renderer.setCurrentTool("circle")
+            return
+        }
+
+        if (value === "text") {
+            setCurrentOption("text")
+            renderer?.setCurrentTool("text")
             return
         }
     }
@@ -81,6 +87,7 @@ const Options = () => {
             <ToggleGroupItem value="rectangle"><RectangleHorizontal/></ToggleGroupItem>
             <ToggleGroupItem value="circle"><CircleIcon/></ToggleGroupItem>   
             <ToggleGroupItem value="line"><LineChartIcon/></ToggleGroupItem>
+            <ToggleGroupItem value="text"><Type/></ToggleGroupItem>
         </ToggleGroup>
         
         {/* Undo/Redo buttons */}
