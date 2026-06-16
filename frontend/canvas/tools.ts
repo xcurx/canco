@@ -1,7 +1,7 @@
 import { ShapeData, CanvasCoords, RectangleData, CircleData } from './type'
-import { createRectangleData, createCircleData, createLineData } from './state'
+import { createRectangleData, createCircleData, createLineData, createTextData } from './state'
 
-export type ToolType = 'rectangle' | 'circle' | 'line' | null
+export type ToolType = 'rectangle' | 'circle' | 'line' | 'text' | null
 
 export class ToolManager {
     private currentTool: ToolType = null
@@ -54,6 +54,13 @@ export class ToolManager {
                     startCoords.y, 
                     this.color, 
                 )
+
+            case 'text':
+                return createTextData(
+                    startCoords.x,
+                    startCoords.y,
+                    this.color,
+                )
             
             default:
                 console.warn(`Unknown tool: ${this.currentTool}`)
@@ -91,6 +98,7 @@ export class ToolManager {
     }
 
     isShapeViable(shape: ShapeData, minSize: number = 15): boolean {
+        if (shape.type === 'text') return true
         return Math.abs(shape.width) > minSize && Math.abs(shape.height) > minSize
     }
 
