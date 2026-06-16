@@ -22,7 +22,13 @@ export interface CircleData extends BaseShapeData {
     type: 'circle'
 }
 
-export type ShapeData = RectangleData | CircleData | LineData
+export interface TextData extends BaseShapeData {
+    type: 'text'
+    text: string
+    fontSize: number
+}
+
+export type ShapeData = RectangleData | CircleData | LineData | TextData
 
 export interface Operation {
     id: string
