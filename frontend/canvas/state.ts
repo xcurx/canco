@@ -44,7 +44,7 @@ export class CanvasState {
                 const updateOp = operation as UpdateShapeOperation
                 const existingShape = newShapes.get(updateOp.data.id)
                 if (existingShape) {
-                    const updatedShape = { ...existingShape, ...updateOp.data.changes }
+                    const updatedShape = { ...existingShape, ...updateOp.data.changes } as ShapeData
                     newShapes.set(updateOp.data.id, updatedShape)
                     if (updatedShape.isSelected) {
                         newSelectId = updateOp.data.id
