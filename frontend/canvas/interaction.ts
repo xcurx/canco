@@ -20,6 +20,7 @@ export type InteractionCallbacks = {
     onUndo: () => void
     onRedo: () => void
     onCameraChange: () => void
+    onEditText?: (shape: ShapeData) => void
 }
 
 export class InteractionManager {
@@ -33,6 +34,9 @@ export class InteractionManager {
     private originalShape: ShapeData | null = null
 
     private lastPanPoint: {x: number, y: number} | null = null
+
+    private lastClickedTime: number = 0
+    private lastClickedShapeId: string | null = null
 
     constructor(
         private canvas: HTMLCanvasElement,
@@ -220,6 +224,15 @@ export class InteractionManager {
         // check from top to bottom (reverse z-order)
         for (let i = shapes.length - 1; i >= 0; i--) {
             if (isPointInShape(coords, shapes[i])) {
+                const now = Date.now()
+                if (this.lastClickedShapeId === shapes[i].id && now - this.lastClickedTime < 300) {
+                    if (shapes[i].type === 'text') {
+                        this.callbacks.onEditText?.(shapes[i])
+                    }
+                }
+                this.lastClickedTime = now
+                this.lastClickedShapeId = shapes[i].id
+
                 // select the shape
                 this.callbacks.onApplyOperation(CanvasState.selectShape(shapes[i].id), true)
                 
@@ -301,6 +314,12 @@ export class InteractionManager {
     private finishCreateShape(): void {
         if (this.tempShape && this.toolManager.isShapeViable(this.tempShape)) {
             this.callbacks.onApplyOperation(CanvasState.createShape(this.tempShape), true)
+
+            if (this.tempShape.type === 'text') {
+                this.callbacks.onEditText?.(this.tempShape)
+                this.toolManager.clearTool()
+                this.callbacks.onApplyOperation(CanvasState.selectShape(this.tempShape.id), false)
+            }
         }
     }
 
