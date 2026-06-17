@@ -56,6 +56,8 @@ const Canvas = ({ roomId }: CanvasProps) => {
               lines.forEach(line => {
                   maxWidth = Math.max(maxWidth, tempCtx.measureText(line).width)
               })
+              // small 2px buffer to prevent extra width wrapping error
+              maxWidth = Math.ceil(maxWidth) + 2
               
               const newHeight = lines.length * fontSize * 1.2
               renderer.updateText(editingText.id, newText, maxWidth, newHeight, editingText)
@@ -75,6 +77,14 @@ const Canvas = ({ roomId }: CanvasProps) => {
             onBlur={(e) => handleTextSubmit(e.target.value)}
             onKeyDown={(e) => {
                 if (e.key === 'Escape') handleTextSubmit(e.currentTarget.value)
+            }}
+            ref={(el) => {
+                if (el) {
+                    el.style.height = '0px'
+                    el.style.height = `${el.scrollHeight}px`
+                    el.style.width = '0px'
+                    el.style.width = `${el.scrollWidth + 10}px`
+                }
             }}
             onInput={(e) => {
                 // auto expand
