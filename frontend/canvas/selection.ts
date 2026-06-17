@@ -39,7 +39,7 @@ export function isPointInShape(coords: CanvasCoords, shape: ShapeData): boolean 
         case 'circle':
             return isPointInCircle(coords, shape)
         case 'text':
-            return isPointInRectangle(coords, shape as any)
+            return isPointInRectangleInterior(coords, shape as any)
         default:
             return false
     }
