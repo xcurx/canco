@@ -95,12 +95,12 @@ export function renderText(ctx: CanvasRenderingContext2D, shape: TextData): void
         const words = paragraph.split(' ')
         let line = ''
         for (let n = 0; n < words.length; n++) {
-            const testLine = line + words[n] + ' '
+            const testLine = line + (line === '' ? '' : ' ') + words[n]
             const testWidth = ctx.measureText(testLine).width
             
             if (testWidth > shape.width && n > 0) {
                 ctx.fillText(line, shape.x, shape.y + yOffset)
-                line = words[n] + ' '
+                line = words[n]
                 yOffset += shape.fontSize * 1.2
             } else {
                 line = testLine

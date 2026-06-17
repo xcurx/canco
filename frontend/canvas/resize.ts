@@ -76,10 +76,10 @@ export function calculateResize(
                 const words = p.split(' ')
                 let line = ''
                 for (let n = 0; n < words.length; n++) {
-                    const testLine = line + words[n] + ''
+                    const testLine = line + (line === '' ? '' : ' ') + words[n]
                     if (tempCtx.measureText(testLine).width > newDimensions.width! && n > 0) {
                         lines++
-                        line = words[n] + ''
+                        line = words[n]
                     } else {
                         line = testLine
                     }
