@@ -2,6 +2,7 @@ import { RendererContext } from '@/components/renderer-context'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { render } from '../canvas/animate'
 import { ShapeData } from '@/canvas/type';
+import { wrapText } from '@/canvas/utils';
 
 interface CanvasProps {
     roomId: string;
@@ -11,6 +12,7 @@ const Canvas = ({ roomId }: CanvasProps) => {
     const canvas = useRef<HTMLCanvasElement | null>(null)
     const [ctx, setCtx] = useState<CanvasRenderingContext2D | null>(null)
     const [editingText, setEditingText] = useState<ShapeData | null>(null)
+    const [isFixedSize, setIsFixedSize] = useState(false)
 
     const { setRenderer, renderer } = useContext(RendererContext)
 
@@ -34,6 +36,24 @@ const Canvas = ({ roomId }: CanvasProps) => {
           renderer.setEditTextCallback((shape) => {
             setEditingText(shape)
             renderer.setEditingShapeId(shape.id)
+
+            if (shape.type === 'text' && (shape as any).text !== '') {
+                const tempCtx = document.createElement('canvas').getContext('2d')
+                if (tempCtx) {
+                    const fontSize = (shape as any).fontSize || 24
+                    tempCtx.font = `${fontSize}px sans-serif`
+                    let oldIntrinsicWidth = 0
+                    ;(shape as any).text.split('\n').forEach((line: string) => {
+                        oldIntrinsicWidth = Math.max(oldIntrinsicWidth, tempCtx.measureText(line).width)
+                    })
+                    oldIntrinsicWidth = Math.ceil(oldIntrinsicWidth) + 2
+                    
+                    // If difference is > 5px, it means you manually shrank or expanded it!
+                    setIsFixedSize(Math.abs(shape.width - oldIntrinsicWidth) > 5)
+                }
+            } else {
+                setIsFixedSize(false)
+            }
           })
         }
     }, [renderer])
@@ -58,8 +78,13 @@ const Canvas = ({ roomId }: CanvasProps) => {
               })
               // small 2px buffer to prevent extra width wrapping error
               maxWidth = Math.ceil(maxWidth) + 2
-              
-              const newHeight = lines.length * fontSize * 1.2
+
+              if (isFixedSize) {
+                maxWidth = editingText.width
+              }
+
+              const wrappedLines = wrapText(tempCtx, newText, maxWidth)
+              const newHeight = wrappedLines.length * fontSize * 1.2
               renderer.updateText(editingText.id, newText, maxWidth, newHeight, editingText)
           }
       }
@@ -82,8 +107,10 @@ const Canvas = ({ roomId }: CanvasProps) => {
                 if (el) {
                     el.style.height = '0px'
                     el.style.height = `${el.scrollHeight}px`
-                    el.style.width = '0px'
-                    el.style.width = `${el.scrollWidth + 10}px`
+                    if (!isFixedSize) {
+                      el.style.width = '0px'
+                      el.style.width = `${el.scrollWidth + 10}px`
+                    }
                 }
             }}
             onInput={(e) => {
@@ -91,8 +118,10 @@ const Canvas = ({ roomId }: CanvasProps) => {
                 const target = e.target as HTMLTextAreaElement
                 target.style.height = '0px'
                 target.style.height = `${target.scrollHeight}px`
-                target.style.width = '0px'
-                target.style.width = `${target.scrollWidth + 10}px`
+                if (!isFixedSize) {
+                  target.style.width = '0px'
+                  target.style.width = `${target.scrollWidth + 10}px`
+                }
             }}
             style={{
                 position: 'absolute',
@@ -110,7 +139,8 @@ const Canvas = ({ roomId }: CanvasProps) => {
                 lineHeight: 1.2,
                 zIndex: 50,
                 overflow: 'hidden',
-                whiteSpace: 'pre'
+                whiteSpace: isFixedSize ? 'pre-wrap' : 'pre',
+                wordBreak: isFixedSize ? 'break-word' : 'normal',
             }}
         />
       )}
