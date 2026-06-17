@@ -12,6 +12,8 @@ import {
 } from './selection'
 import { ToolManager } from './tools'
 import { Camera } from './camera'
+import { ShortcutManager } from './shortcuts'
+import { calculateResize } from './resize'
 
 export type InteractionCallbacks = {
     onStateChange: (state: CanvasStateEnum) => void
@@ -35,8 +37,7 @@ export class InteractionManager {
 
     private lastPanPoint: {x: number, y: number} | null = null
 
-    private lastClickedTime: number = 0
-    private lastClickedShapeId: string | null = null
+    private shortcutManager: ShortcutManager
 
     constructor(
         private canvas: HTMLCanvasElement,
@@ -46,6 +47,29 @@ export class InteractionManager {
         private camera: Camera
     ) {
         this.addEventListeners()
+
+        this.shortcutManager = new ShortcutManager({
+            onUndo: () => this.callbacks.onUndo(),
+            onRedo: () => this.callbacks.onRedo(),
+            onDelete: () => {
+                const selectedShape = this.getCanvasState().getSelectedShape()
+                if (selectedShape) {
+                    this.callbacks.onApplyOperation(CanvasState.deleteShape(selectedShape.id), true)
+                }
+            },
+            onEscape: () => {
+                this.toolManager.clearTool()
+                this.callbacks.onApplyOperation(CanvasState.deselectAll(), true)
+            },
+            onSpaceDown: () => {
+                this.state = CanvasStateEnum.PANNING
+                this.canvas.style.cursor = 'grab'
+            },
+            onSpaceUp: () => {
+                this.state = CanvasStateEnum.IDLE
+                this.canvas.style.cursor = 'default'
+            }
+        })
     }
 
     handleMouseDown(coords: CanvasCoords, e: MouseEvent): void {
@@ -160,25 +184,6 @@ export class InteractionManager {
         this.callbacks.onCameraChange()
     }
 
-    handleKeyDown(e: KeyboardEvent): void {
-        // prevent default for all handled keys
-        if (document.activeElement?.tagName === 'TEXTAREA' || document.activeElement?.tagName === 'INPUT') {
-            return
-        }
-
-        const handled = this.processKeyboardShortcut(e)
-        if (handled) {
-            e.preventDefault()
-        }
-    }
-
-    handleKeyUp(e: KeyboardEvent): void {
-        if (e.code === 'Space') {
-            this.state = CanvasStateEnum.IDLE
-            this.canvas.style.cursor = 'default'
-        }
-    }
-
     getState(): CanvasStateEnum {
         return this.state
     }
@@ -193,8 +198,7 @@ export class InteractionManager {
         this.canvas.removeEventListener("mouseup", this.onMouseUp)
         this.canvas.removeEventListener("wheel", this.onWheel)
         this.canvas.removeEventListener("dblclick", this.onDoubleClick)
-        removeEventListener("keydown", this.onKeyDown)
-        removeEventListener("keyup", this.onKeyUp)
+        this.shortcutManager.cleanup()
     }
 
     private handleResizeHandleClick(coords: CanvasCoords, selectedShape: ShapeData): boolean {
@@ -293,7 +297,7 @@ export class InteractionManager {
     private handleResizeObjectMove(coords: CanvasCoords): void {
         const selectedShape = this.getCanvasState().getSelectedShape()
         if (selectedShape && this.resizeHandle) {
-            const newDimensions = this.calculateResize(selectedShape, this.resizeHandle, coords)
+            const newDimensions = calculateResize(selectedShape, this.resizeHandle, coords)
             this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, newDimensions), false)
         }
     }
@@ -335,7 +339,7 @@ export class InteractionManager {
     private finishResizeShape(coords: CanvasCoords): void {
         const selectedShape = this.getCanvasState().getSelectedShape()
         if (selectedShape && this.resizeHandle) {
-            const newDimensions = this.calculateResize(selectedShape, this.resizeHandle, coords)
+            const newDimensions = calculateResize(selectedShape, this.resizeHandle, coords)
             this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, newDimensions), true, this.originalShape ?? undefined)
         }
     }
@@ -346,151 +350,6 @@ export class InteractionManager {
             this.lastPanPoint = null
             this.canvas.style.cursor = 'default'
         }
-    }
-
-    private calculateResize(
-        shape: ShapeData, 
-        handle: {type: string}, 
-        coords: CanvasCoords
-    ): Partial<ShapeData> {
-        const newDimensions: Partial<ShapeData> = {}
-
-        switch (handle.type) {
-            case 'top-left':
-                newDimensions.width = (shape.x + shape.width) - coords.x
-                newDimensions.height = (shape.y + shape.height) - coords.y
-                newDimensions.x = coords.x
-                newDimensions.y = coords.y
-                break
-
-            case 'top-right':
-                newDimensions.width = coords.x - shape.x
-                newDimensions.height = (shape.y + shape.height) - coords.y
-                newDimensions.y = coords.y
-                break
-
-            case 'bottom-right':
-                newDimensions.width = coords.x - shape.x
-                newDimensions.height = coords.y - shape.y
-                break
-
-            case 'bottom-left':
-                newDimensions.width = (shape.x + shape.width) - coords.x
-                newDimensions.height = coords.y - shape.y
-                newDimensions.x = coords.x
-                break
-
-            case 'top-middle':
-                newDimensions.height = (shape.y + shape.height) - coords.y
-                newDimensions.y = coords.y
-                break
-
-            case 'bottom-middle':
-                newDimensions.height = coords.y - shape.y
-                break
-
-            case 'middle-left':
-                newDimensions.width = (shape.x + shape.width) - coords.x
-                newDimensions.x = coords.x
-                break
-
-            case 'middle-right':
-                newDimensions.width = coords.x - shape.x
-                break
-            case 'start':
-                newDimensions.x = coords.x
-                newDimensions.y = coords.y
-                newDimensions.width = (shape.x + shape.width) - coords.x
-                newDimensions.height = (shape.y + shape.height) - coords.y
-                break
-            case 'end':
-                newDimensions.width = coords.x - shape.x
-                newDimensions.height = coords.y - shape.y
-                break
-        }
-
-        // Ensure minimum size
-        if (shape.type !== "line" && newDimensions.width !== undefined) {
-            newDimensions.width = Math.max(newDimensions.width, 15)
-        }
-
-        if (shape.type !== "line" && newDimensions.height !== undefined) {
-            newDimensions.height = Math.max(newDimensions.height, 15)
-        }
-
-        if (shape.type === 'text' && newDimensions.width !== undefined && newDimensions.height !== undefined) {
-            const textShape = shape as any
-            if (handle.type === 'middle-left' || handle.type === 'middle-right') {
-                const tempCtx = document.createElement('canvas').getContext('2d')
-                if (!tempCtx) {
-                    throw new Error("Could not get 2D context from canvas")
-                }
-                tempCtx.font = `${textShape.fontSize}px sans-serif`
-                
-                let lines = 0
-                const paragraphs = textShape.text.split('\n')
-                paragraphs.forEach((p:string) => {
-                    const words = p.split(' ')
-                    let line = ''
-                    for (let n = 0; n < words.length; n++) {
-                        const testLine = line + words[n] + ''
-                        if (tempCtx.measureText(testLine).width > newDimensions.width! && n > 0) {
-                            lines++
-                            line = words[n] + ''
-                        } else {
-                            line = testLine
-                        }
-                    }
-                    lines++
-                })
-                newDimensions.height = (lines) * textShape.fontSize * 1.2
-            } else {
-                const widthRatio = newDimensions.width / shape.width;
-                (newDimensions as any).fontSize = textShape.fontSize * widthRatio
-                newDimensions.height = shape.height * widthRatio
-            }
-        }
-
-        return newDimensions
-    }
-
-    private processKeyboardShortcut(e: KeyboardEvent): boolean {
-        // Ctrl+Z or Cmd+Z for undo
-        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-            this.callbacks.onUndo()
-            return true
-        }
-        
-        // Ctrl+Shift+Z or Ctrl+Y or Cmd+Shift+Z for redo
-        if (((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') || 
-            (e.ctrlKey && e.key === 'y')) {
-            this.callbacks.onRedo()
-            return true
-        }
-        
-        // Delete key to delete selected shape
-        if (e.key === 'Delete' || e.key === 'Backspace') {
-            const selectedShape = this.getCanvasState().getSelectedShape()
-            if (selectedShape) {
-                this.callbacks.onApplyOperation(CanvasState.deleteShape(selectedShape.id), true)
-                return true
-            }
-        }
-
-        // Escape to clear tool selection
-        if (e.key === 'Escape') {
-            this.toolManager.clearTool()
-            this.callbacks.onApplyOperation(CanvasState.deselectAll(), true)
-            return true
-        }
-
-        if (e.code === 'Space') {
-            this.state = CanvasStateEnum.PANNING
-            this.canvas.style.cursor = 'grab'
-            return true
-        }
-
-        return false
     }
 
     private resetInteractionState(): void {
@@ -511,8 +370,6 @@ export class InteractionManager {
         this.canvas.addEventListener("mouseup", this.onMouseUp)
         this.canvas.addEventListener("wheel", this.onWheel, { passive: false })
         this.canvas.addEventListener("dblclick", this.onDoubleClick)
-        addEventListener("keydown", this.onKeyDown)
-        addEventListener("keyup", this.onKeyUp)
     }
 
     // event handler wrappers to maintain 'this' context
@@ -529,14 +386,6 @@ export class InteractionManager {
     private onMouseUp = (e: MouseEvent) => {
         const coords = this.getCanvasCoordinates(e)
         this.handleMouseUp(coords)
-    }
-
-    private onKeyDown = (e: KeyboardEvent) => {
-        this.handleKeyDown(e)
-    }
-
-    private onKeyUp = (e: KeyboardEvent) => {
-        this.handleKeyUp(e)
     }
 
     private onWheel = (e: WheelEvent) => {
