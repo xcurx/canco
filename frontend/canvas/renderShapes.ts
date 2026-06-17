@@ -1,3 +1,4 @@
+import { wrapText } from './utils'
 import { getResizeHandles } from './selection'
 import {
     CircleData,
@@ -89,23 +90,10 @@ export function renderText(ctx: CanvasRenderingContext2D, shape: TextData): void
     ctx.fillStyle = shape.color
     ctx.textBaseline = "top"
 
+    const lines = wrapText(ctx, shape.text, shape.width)
+    
     let yOffset = 0
-    const paragraphs = shape.text.split('\n')
-    paragraphs.forEach(paragraph => {
-        const words = paragraph.split(' ')
-        let line = ''
-        for (let n = 0; n < words.length; n++) {
-            const testLine = line + (line === '' ? '' : ' ') + words[n]
-            const testWidth = ctx.measureText(testLine).width
-            
-            if (testWidth > shape.width && n > 0) {
-                ctx.fillText(line, shape.x, shape.y + yOffset)
-                line = words[n]
-                yOffset += shape.fontSize * 1.2
-            } else {
-                line = testLine
-            }
-        }
+    lines.forEach(line => {
         ctx.fillText(line, shape.x, shape.y + yOffset)
         yOffset += shape.fontSize * 1.2
     })
