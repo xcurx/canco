@@ -63,36 +63,82 @@ export function calculateResize(
     }
 
     // Text scaling logic
-    if (shape.type === 'text' && newDimensions.width !== undefined && newDimensions.height !== undefined) {
+    if (shape.type === 'text' && newDimensions.width !== undefined) {
         const textShape = shape as any
         if (handle.type === 'middle-left' || handle.type === 'middle-right') {
             const tempCtx = document.createElement('canvas').getContext('2d')
             if (!tempCtx) throw new Error("Could not get 2D context from canvas")
             
             tempCtx.font = `${textShape.fontSize}px sans-serif`
-            let lines = 0
-            const paragraphs = textShape.text.split('\n')
-            paragraphs.forEach((p:string) => {
-                const words = p.split(' ')
-                let line = ''
-                for (let n = 0; n < words.length; n++) {
-                    const testLine = line + (line === '' ? '' : ' ') + words[n]
-                    if (tempCtx.measureText(testLine).width > newDimensions.width! && n > 0) {
-                        lines++
-                        line = words[n]
-                    } else {
-                        line = testLine
-                    }
-                }
-                lines++
-            })
-            newDimensions.height = (lines) * textShape.fontSize * 1.2
-        } else {
+            const lines = wrapText(tempCtx, textShape.text, newDimensions.width)
+            newDimensions.height = (lines.length) * textShape.fontSize * 1.2
+        } else if (newDimensions.height !== undefined) {
             const widthRatio = newDimensions.width / shape.width;
-            (newDimensions as any).fontSize = textShape.fontSize * widthRatio
+            (newDimensions as any).fontSize = textShape.fontSize * widthRatio;
             newDimensions.height = shape.height * widthRatio
         }
     }
 
     return newDimensions
+}
+
+export function wrapText(
+    ctx: CanvasRenderingContext2D, 
+    text: string, 
+    maxWidth: number
+): string[] {
+    const lines: string[] = []
+    const paragraphs = text.split('\n')
+
+    paragraphs.forEach(paragraph => {
+        const words = paragraph.split(' ')
+        let currentLine = ''
+
+        for (let i = 0; i < words.length; i++) {
+            const word = words[i]
+            const space = currentLine === '' ? '' : ' '
+            const testLine = currentLine + space + word
+
+            // when whole word fits on the current line
+            if (ctx.measureText(testLine).width <= maxWidth) {
+                currentLine = testLine
+            } else {
+                // when word fits by itself so push the current line and start a new one
+                if (currentLine !== '' && ctx.measureText(word).width <= maxWidth) {
+                    lines.push(currentLine)
+                    currentLine = word
+                } else {
+                    // when word is too long for the box so break it by character.
+                    if (currentLine !== '') {
+                        currentLine += space
+                    }
+
+                    for (let j = 0; j < word.length; j++) {
+                        const char = word[j]
+                        const testCharLine = currentLine + char
+                        
+                        if (ctx.measureText(testCharLine).width <= maxWidth) {
+                            currentLine = testCharLine
+                        } else {
+                            if (currentLine !== '') {
+                                lines.push(currentLine)
+                                currentLine = char
+                            } else {
+                                // force every character on new line
+                                lines.push(char)
+                                currentLine = ''
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // push the last remaining line or preserve explicit empty lines (like \n\n)
+        if (currentLine !== '' || (words.length === 1 && words[0] === '')) {
+            lines.push(currentLine)
+        }
+    })
+
+    return lines
 }
