@@ -60,6 +60,7 @@ export class ToolManager {
                     startCoords.x,
                     startCoords.y,
                     this.color,
+                    ""
                 )
             
             default:
