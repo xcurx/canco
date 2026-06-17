@@ -162,6 +162,10 @@ export class InteractionManager {
 
     handleKeyDown(e: KeyboardEvent): void {
         // prevent default for all handled keys
+        if (document.activeElement?.tagName === 'TEXTAREA' || document.activeElement?.tagName === 'INPUT') {
+            return
+        }
+
         const handled = this.processKeyboardShortcut(e)
         if (handled) {
             e.preventDefault()
@@ -188,6 +192,7 @@ export class InteractionManager {
         this.canvas.removeEventListener("mousemove", this.onMouseMove)
         this.canvas.removeEventListener("mouseup", this.onMouseUp)
         this.canvas.removeEventListener("wheel", this.onWheel)
+        this.canvas.removeEventListener("dblclick", this.onDoubleClick)
         removeEventListener("keydown", this.onKeyDown)
         removeEventListener("keyup", this.onKeyUp)
     }
@@ -224,15 +229,6 @@ export class InteractionManager {
         // check from top to bottom (reverse z-order)
         for (let i = shapes.length - 1; i >= 0; i--) {
             if (isPointInShape(coords, shapes[i])) {
-                const now = Date.now()
-                if (this.lastClickedShapeId === shapes[i].id && now - this.lastClickedTime < 300) {
-                    if (shapes[i].type === 'text') {
-                        this.callbacks.onEditText?.(shapes[i])
-                    }
-                }
-                this.lastClickedTime = now
-                this.lastClickedShapeId = shapes[i].id
-
                 // select the shape
                 this.callbacks.onApplyOperation(CanvasState.selectShape(shapes[i].id), true)
                 
@@ -422,6 +418,39 @@ export class InteractionManager {
             newDimensions.height = Math.max(newDimensions.height, 15)
         }
 
+        if (shape.type === 'text' && newDimensions.width !== undefined && newDimensions.height !== undefined) {
+            const textShape = shape as any
+            if (handle.type === 'middle-left' || handle.type === 'middle-right') {
+                const tempCtx = document.createElement('canvas').getContext('2d')
+                if (!tempCtx) {
+                    throw new Error("Could not get 2D context from canvas")
+                }
+                tempCtx.font = `${textShape.fontSize}px sans-serif`
+                
+                let lines = 0
+                const paragraphs = textShape.text.split('\n')
+                paragraphs.forEach((p:string) => {
+                    const words = p.split(' ')
+                    let line = ''
+                    for (let n = 0; n < words.length; n++) {
+                        const testLine = line + words[n] + ''
+                        if (tempCtx.measureText(testLine).width > newDimensions.width! && n > 0) {
+                            lines++
+                            line = words[n] + ''
+                        } else {
+                            line = testLine
+                        }
+                    }
+                    lines++
+                })
+                newDimensions.height = (lines) * textShape.fontSize * 1.2
+            } else {
+                const widthRatio = newDimensions.width / shape.width;
+                (newDimensions as any).fontSize = textShape.fontSize * widthRatio
+                newDimensions.height = shape.height * widthRatio
+            }
+        }
+
         return newDimensions
     }
 
@@ -481,6 +510,7 @@ export class InteractionManager {
         this.canvas.addEventListener("mousemove", this.onMouseMove)
         this.canvas.addEventListener("mouseup", this.onMouseUp)
         this.canvas.addEventListener("wheel", this.onWheel, { passive: false })
+        this.canvas.addEventListener("dblclick", this.onDoubleClick)
         addEventListener("keydown", this.onKeyDown)
         addEventListener("keyup", this.onKeyUp)
     }
@@ -512,6 +542,20 @@ export class InteractionManager {
     private onWheel = (e: WheelEvent) => {
         e.preventDefault()
         this.handleWheel(e)
+    }
+
+    private onDoubleClick = (e: MouseEvent) => {
+        if (this.state !== CanvasStateEnum.IDLE) return
+        const coords = this.getCanvasCoordinates(e)
+        const shapes = this.getCanvasState().getAllShapes()
+
+        for (let i = shapes.length - 1; i >= 0; i--) {
+            if (shapes[i].type === 'text' && isPointInShape(coords, shapes[i])) {
+                this.callbacks.onEditText?.(shapes[i])
+                break
+            }
+        }
+
     }
 
     private getCanvasCoordinates(e: MouseEvent): CanvasCoords {
