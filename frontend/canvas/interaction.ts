@@ -13,7 +13,7 @@ import {
 import { ToolManager } from './tools'
 import { Camera } from './camera'
 import { ShortcutManager } from './shortcuts'
-import { calculateResize } from './resize'
+import { calculateResize } from './utils'
 
 export type InteractionCallbacks = {
     onStateChange: (state: CanvasStateEnum) => void
