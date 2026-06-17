@@ -1,5 +1,5 @@
 import { RendererContext } from '@/components/renderer-context'
-import React, { useContext, useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { render } from '../canvas/animate'
 import { ShapeData } from '@/canvas/type';
 
