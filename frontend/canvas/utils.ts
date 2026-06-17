@@ -96,7 +96,7 @@ export function wrapText(
     maxWidth: number
 ): string[] {
     const lines: string[] = []
-    const paragraphs = text.split('\n')
+    const paragraphs = (text || '').split('\n')
 
     paragraphs.forEach(paragraph => {
         const words = paragraph.split(' ')

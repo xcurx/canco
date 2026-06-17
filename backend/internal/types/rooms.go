@@ -53,14 +53,16 @@ func (rm *RoomManager) GetOrCreateRoom(roomID string, isPersistent bool, db *dat
 		
 		for _, s := range shapes {
 			roomState.Shapes = append(roomState.Shapes, Shape{
-				ID: s.ID,
-				Type: s.Type,
-				X: float64(s.X),
-				Y: float64(s.Y),
-				Width: float64(s.Width),
-				Height: float64(s.Height),
-				Color: s.Color,
-				ZIndex: int(s.ZIndex),
+				ID:       s.ID,
+				Type:     s.Type,
+				X:        float64(s.X),
+				Y:        float64(s.Y),
+				Width:    float64(s.Width),
+				Height:   float64(s.Height),
+				Color:    s.Color,
+				ZIndex:   int(s.ZIndex),
+				Text:     s.Text.String,
+				FontSize: s.FontSize.Float64,
 			})
 		}
 	}
