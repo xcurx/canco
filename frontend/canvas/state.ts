@@ -208,14 +208,14 @@ export function createCircleData(x: number, y: number, radiusX: number, radiusY:
     }
 }
 
-export function createTextData(x: number, y: number, color: string, text: string = "Text"): TextData {
+export function createTextData(x: number, y: number, color: string, text: string): TextData {
     return {
         id: crypto.randomUUID(),
         type: 'text',
         x,
         y,
-        width: 200,
-        height: 40,
+        width: 20,
+        height: 28.8,
         color,
         isSelected: false,
         zIndex: Date.now(),
