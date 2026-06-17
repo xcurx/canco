@@ -20,6 +20,7 @@ export class Renderer {
     
     private tempShape: ShapeData | null = null
     private currentInteractionState: CanvasStateEnum = CanvasStateEnum.IDLE
+    private editingShapeId: string | null = null
 
     private socket: Socket | null = null
     private roomId?: string
@@ -34,7 +35,8 @@ export class Renderer {
             onUpdateTempShape: (shape) => this.updateTempShape(shape),
             onUndo: () => this.undo(),
             onRedo: () => this.redo(),
-            onCameraChange: () => this.render()
+            onCameraChange: () => this.render(),
+            onEditText: (shape) => this.onEditTextCallback?.(shape)
         }
         
         this.historyManager = new HistoryManager(() => this.canvasState)
@@ -156,18 +158,31 @@ export class Renderer {
         this.render()
     }
 
+    public deleteShape(shapeId: string) {
+        this.applyOperation(CanvasState.deleteShape(shapeId), false, true)
+    }
+
     private onEditTextCallback?: (shape: ShapeData) => void
 
     public setEditTextCallback(cb: (shape: ShapeData) => void) {
         this.onEditTextCallback = cb
     }
 
-    public updateText(shapeId: string, newText: string, originalShape: ShapeData) {
-        this.applyOperation(CanvasState.updateShape(shapeId, { text: newText }), false, true, originalShape)
+    public updateText(shapeId: string, newText: string, width: number, height: number, originalShape: ShapeData) {
+        this.applyOperation(CanvasState.updateShape(shapeId, { text: newText, width, height }), false, true, originalShape)
     }
 
     public getCamera() {
         return this.camera
+    }
+
+    public setEditingShapeId(id: string | null) {
+        this.editingShapeId = id
+        this.render()
+    }
+
+    public getEditingShapeId() {
+        return this.editingShapeId
     }
 
     render(): void {
@@ -185,7 +200,9 @@ export class Renderer {
         
         const shapes = this.canvasState.getAllShapes()
         shapes.forEach(shape => {
-            renderShape(this.ctx, shape)
+            if (shape.id !== this.editingShapeId) {
+                renderShape(this.ctx, shape)
+            }
         })
         
         if (this.tempShape) {

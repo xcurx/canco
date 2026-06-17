@@ -33,15 +33,35 @@ const Canvas = ({ roomId }: CanvasProps) => {
         if (renderer) {
           renderer.setEditTextCallback((shape) => {
             setEditingText(shape)
+            renderer.setEditingShapeId(shape.id)
           })
         }
     }, [renderer])
 
     const handleTextSubmit = (newText: string) => {
-      if (editingText && renderer) {
-        renderer.updateText(editingText.id, newText, editingText)
-        setEditingText(null)
+      if (renderer) renderer.setEditingShapeId(null)
+      if (!newText.trim() && editingText && renderer) {
+          renderer.deleteShape(editingText.id)
+          setEditingText(null)
+          return
       }
+      if (editingText && renderer) {
+          const tempCtx = document.createElement('canvas').getContext('2d')
+          if (tempCtx) {
+              // Add fallback to 24 if fontSize is missing!
+              const fontSize = (editingText as any).fontSize || 24
+              tempCtx.font = `${fontSize}px sans-serif`
+              const lines = newText.split('\n')
+              let maxWidth = 0
+              lines.forEach(line => {
+                  maxWidth = Math.max(maxWidth, tempCtx.measureText(line).width)
+              })
+              
+              const newHeight = lines.length * fontSize * 1.2
+              renderer.updateText(editingText.id, newText, maxWidth, newHeight, editingText)
+          }
+      }
+      setEditingText(null)
     }
 
   return (
@@ -49,32 +69,40 @@ const Canvas = ({ roomId }: CanvasProps) => {
       <canvas ref={canvas} style={{backgroundColor:"#121212"}}></canvas>
 
       {editingText && renderer && (
-            <textarea
-                autoFocus
-                defaultValue={(editingText as any).text}
-                onBlur={(e) => handleTextSubmit(e.target.value)}
-                onKeyDown={(e) => {
-                    if (e.key === 'Escape') handleTextSubmit(e.currentTarget.value)
-                }}
-                style={{
-                    position: 'absolute',
-                    // align textarea to camera pan and zoom
-                    left: renderer.getCamera().worldToScreen(editingText.x, editingText.y).x,
-                    top: renderer.getCamera().worldToScreen(editingText.x, editingText.y).y,
-                    width: editingText.width * renderer.getCamera().scale,
-                    height: editingText.height * renderer.getCamera().scale,
-                    fontSize: `${(editingText as any).fontSize * renderer.getCamera().scale}px`,
-                    color: editingText.color,
-                    background: 'transparent',
-                    border: '1px dashed #007acc',
-                    outline: 'none',
-                    resize: 'none',
-                    padding: 0,
-                    margin: 0,
-                    lineHeight: 1.2,
-                    zIndex: 50,
-                }}
-            />
+        <textarea
+            autoFocus
+            defaultValue={(editingText as any).text}
+            onBlur={(e) => handleTextSubmit(e.target.value)}
+            onKeyDown={(e) => {
+                if (e.key === 'Escape') handleTextSubmit(e.currentTarget.value)
+            }}
+            onInput={(e) => {
+                // auto expand
+                const target = e.target as HTMLTextAreaElement
+                target.style.height = '0px'
+                target.style.height = `${target.scrollHeight}px`
+                target.style.width = '0px'
+                target.style.width = `${target.scrollWidth + 10}px`
+            }}
+            style={{
+                position: 'absolute',
+                left: renderer.getCamera().worldToScreen(editingText.x, editingText.y).x,
+                top: renderer.getCamera().worldToScreen(editingText.x, editingText.y).y,
+                minWidth: '20px',
+                width: `${Math.max(20, editingText.width * renderer.getCamera().scale)}px`,
+                height: `${Math.max(28.8, editingText.height * renderer.getCamera().scale)}px`,
+                fontSize: `${((editingText as any).fontSize || 24) * renderer.getCamera().scale}px`,
+                color: editingText.color,
+                outline: 'none',
+                resize: 'none',
+                padding: 0,
+                margin: 0,
+                lineHeight: 1.2,
+                zIndex: 50,
+                overflow: 'hidden',
+                whiteSpace: 'pre'
+            }}
+        />
       )}
     </div>
   )
