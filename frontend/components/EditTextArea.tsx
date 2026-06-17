@@ -72,6 +72,9 @@ export const EditTextarea = () => {
     const scale = renderer.getCamera().scale
     const pos = renderer.getCamera().worldToScreen(editingText.x, editingText.y)
 
+    const scaledFontSize = ((editingText as any).fontSize || 24) * scale
+    const topOffset = scaledFontSize * 0.173 // tested value to minimize text offset while editing
+
     return (
         <textarea
             autoFocus
@@ -102,11 +105,11 @@ export const EditTextarea = () => {
             style={{
                 position: 'absolute',
                 left: pos.x,
-                top: pos.y,
+                top: pos.y - topOffset,
                 minWidth: '20px',
                 width: `${Math.max(20, editingText.width * scale)}px`,
                 height: `${Math.max(28.8, editingText.height * scale)}px`,
-                fontSize: `${((editingText as any).fontSize || 24) * scale}px`,
+                fontSize: `${scaledFontSize}px`,
                 color: editingText.color,
                 outline: 'none',
                 resize: 'none',
@@ -117,7 +120,9 @@ export const EditTextarea = () => {
                 overflow: 'hidden',
                 whiteSpace: isFixedSize ? 'pre-wrap' : 'pre',
                 wordBreak: isFixedSize ? 'break-word' : 'normal',
-                background: 'transparent'
+                background: 'transparent',
+                border: 'none',
+                fontFamily: 'sans-serif',
             }}
         />
     )
