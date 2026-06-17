@@ -63,16 +63,24 @@ export function calculateResize(
     }
 
     // Text scaling logic
-    if (shape.type === 'text' && newDimensions.width !== undefined) {
+    if (shape.type === 'text') {
         const textShape = shape as any
         if (handle.type === 'middle-left' || handle.type === 'middle-right') {
-            const tempCtx = document.createElement('canvas').getContext('2d')
-            if (!tempCtx) throw new Error("Could not get 2D context from canvas")
-            
-            tempCtx.font = `${textShape.fontSize}px sans-serif`
-            const lines = wrapText(tempCtx, textShape.text, newDimensions.width)
-            newDimensions.height = (lines.length) * textShape.fontSize * 1.2
-        } else if (newDimensions.height !== undefined) {
+            if (newDimensions.width !== undefined) {
+                const tempCtx = document.createElement('canvas').getContext('2d')
+                if (!tempCtx) throw new Error("Could not get 2D context from canvas")
+                
+                tempCtx.font = `${textShape.fontSize}px sans-serif`
+                const lines = wrapText(tempCtx, textShape.text, newDimensions.width)
+                newDimensions.height = (lines.length) * textShape.fontSize * 1.2
+            }
+        } else if (handle.type === 'top-middle' || handle.type === 'bottom-middle') {
+            if (newDimensions.height !== undefined) {
+                const heightRatio = newDimensions.height / shape.height;
+                (newDimensions as any).fontSize = textShape.fontSize * heightRatio;
+                newDimensions.width = shape.width * heightRatio;
+            }
+        } else if (newDimensions.height !== undefined && newDimensions.width !== undefined) {
             const widthRatio = newDimensions.width / shape.width;
             (newDimensions as any).fontSize = textShape.fontSize * widthRatio;
             newDimensions.height = shape.height * widthRatio
