@@ -89,10 +89,25 @@ export function renderText(ctx: CanvasRenderingContext2D, shape: TextData): void
     ctx.fillStyle = shape.color
     ctx.textBaseline = "top"
 
-    // split on new lines to support multiline text
-    const lines = shape.text.split('\n')
-    lines.forEach((line, index) => {
-        ctx.fillText(line, shape.x, shape.y + index * shape.fontSize * 1.2)  
+    let yOffset = 0
+    const paragraphs = shape.text.split('\n')
+    paragraphs.forEach(paragraph => {
+        const words = paragraph.split(' ')
+        let line = ''
+        for (let n = 0; n < words.length; n++) {
+            const testLine = line + words[n] + ' '
+            const testWidth = ctx.measureText(testLine).width
+            
+            if (testWidth > shape.width && n > 0) {
+                ctx.fillText(line, shape.x, shape.y + yOffset)
+                line = words[n] + ' '
+                yOffset += shape.fontSize * 1.2
+            } else {
+                line = testLine
+            }
+        }
+        ctx.fillText(line, shape.x, shape.y + yOffset)
+        yOffset += shape.fontSize * 1.2
     })
 
     if (shape.isSelected) {
