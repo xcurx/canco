@@ -48,7 +48,14 @@ export class Renderer {
             this.camera
         )
 
-        const url = this.roomId ? `ws://localhost:8080/api/join/${this.roomId}` : undefined
+        let baseUrl = process.env.NEXT_PUBLIC_API_URL || 'ws://localhost:8080';
+        if (baseUrl.startsWith('http://')) {
+            baseUrl = baseUrl.replace('http://', 'ws://');
+        } else if (baseUrl.startsWith('https://')) {
+            baseUrl = baseUrl.replace('https://', 'wss://');
+        }
+        
+        const url = this.roomId ? `${baseUrl}/api/join/${this.roomId}` : undefined
 
         if (url) {
             this.socket = new Socket(url, {
