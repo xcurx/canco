@@ -20,7 +20,7 @@ func Load() *Config {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "7860"
 	}
 
 	dbUrl := os.Getenv("DATABASE_URL")
