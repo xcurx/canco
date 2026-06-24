@@ -22,14 +22,14 @@ func InitializeServer(db *database.DB) *gin.Engine {
 
 	wsHandler := websocketPkg.New(db)
 
-    r.GET("/", func(c *gin.Context) {
+    r.Any("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status": "online",
 			"message": "Canco API is running! 🚀",
 		})
 	})
 
-    r.GET("/ping", func(c *gin.Context) {
+    r.Any("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "pong",
 		})
