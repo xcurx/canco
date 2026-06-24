@@ -3,15 +3,17 @@ package server
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/xcurx/canco-backend/internal/config"
 	"github.com/xcurx/canco-backend/internal/database"
 	"github.com/xcurx/canco-backend/internal/handlers"
 	"github.com/xcurx/canco-backend/pkg/websocket"
 )
 
 func InitializeServer(db *database.DB) *gin.Engine {
+	cfg := config.Load()
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
-			AllowOrigins: []string{"*"},
+			AllowOrigins: []string{cfg.AllowOrigin},
 			AllowMethods: []string{"GET", "POST", "PUT", "DELETE","OPTIONS"},
 			AllowHeaders: []string{"Accept", "Content-Type", "Accept"},
 			AllowCredentials: true,
