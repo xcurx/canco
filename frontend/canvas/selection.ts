@@ -26,11 +26,14 @@ export function getResizeHandles(shape: ShapeData, scale: number = 1): Array<{x:
         { x: shape.x + shape.width + padding, y: shape.y + shape.height / 2, type: 'middle-right' },
         { x: shape.x - padding, y: shape.y + shape.height + padding, type: 'bottom-left' },
         { x: shape.x + shape.width / 2, y: shape.y + shape.height + padding, type: 'bottom-middle' },
-        { x: shape.x + shape.width + padding, y: shape.y + shape.height + padding, type: 'bottom-right' }
+        { x: shape.x + shape.width + padding, y: shape.y + shape.height + padding, type: 'bottom-right' },
+        // 30px above for rotation
+        { x: shape.x + shape.width / 2, y: shape.y - 30 / scale, type: 'rotation' },
     ]
 }
 
 export function isPointInShape(coords: CanvasCoords, shape: ShapeData): boolean {
+    coords = unrotateCoords(coords, shape)
     switch (shape.type) {
         case 'line':
             return isPointInLine(coords, shape)
@@ -124,7 +127,7 @@ export function isPointInHandle(coords: CanvasCoords, handle: {x: number, y: num
 
 export function getClickedHandle(coords: CanvasCoords, shape: ShapeData, scale: number = 1): { x: number, y: number, type: string } | null {
     const handles = getResizeHandles(shape, scale)
-
+    coords = unrotateCoords(coords, shape)
     for (const handle of handles) {
         if (isPointInHandle(coords, handle, scale)) {
             return handle
@@ -135,6 +138,7 @@ export function getClickedHandle(coords: CanvasCoords, shape: ShapeData, scale: 
 }
 
 export function isPointInShapeInterior(coords: CanvasCoords, shape: ShapeData): boolean {
+    coords = unrotateCoords(coords, shape)
     switch (shape.type) {
         case 'rectangle':
             return isPointInRectangleInterior(coords, shape)
@@ -171,4 +175,24 @@ function isPointInCircleInterior(coords: CanvasCoords, circle: CircleData): bool
     const distanceSquared = normX * normX + normY * normY
 
     return distanceSquared <= 1 // Inside the ellipse
+}
+
+export function unrotateCoords(coords: CanvasCoords, shape: ShapeData): CanvasCoords {
+    if (!shape.rotation) return coords;
+    
+    const centerX = shape.x + shape.width / 2;
+    const centerY = shape.y + shape.height / 2;
+    // rotating backwards so negative angle
+    const angleInRadians = -(shape.rotation * Math.PI) / 180;
+    
+    const dx = coords.x - centerX;
+    const dy = coords.y - centerY;
+    
+    const rotatedX = dx * Math.cos(angleInRadians) - dy * Math.sin(angleInRadians);
+    const rotatedY = dx * Math.sin(angleInRadians) + dy * Math.cos(angleInRadians);
+    
+    return {
+        x: centerX + rotatedX,
+        y: centerY + rotatedY
+    };
 }
