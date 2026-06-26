@@ -50,6 +50,7 @@ type Shape struct {
 	Height     float64    `json:"height"`
 	Color      string `json:"color"`
 	ZIndex     int    `json:"zIndex"`
+	Rotation   float64 `json:"rotation"`
 	Text       string `json:"text,omitempty"`
 	FontSize   float64 `json:"fontSize,omitempty"`
 }
@@ -63,6 +64,7 @@ type PartialShape struct {
 	Color      *string `json:"color,omitempty"`
 	IsSelected *bool   `json:"isSelected,omitempty"`
 	ZIndex     *int    `json:"zIndex,omitempty"`
+	Rotation   *float64 `json:"rotation,omitempty"`
 	Text       *string `json:"text,omitempty"`
 	FontSize   *float64 `json:"fontSize,omitempty"`
 }
