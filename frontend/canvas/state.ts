@@ -166,7 +166,7 @@ export class CanvasState {
     }
 }
 
-export function createLineData(x1: number, y1: number, x2: number, y2: number, color: string): ShapeData {
+export function createLineData(x1: number, y1: number, x2: number, y2: number, color: string, r: number = 0): ShapeData {
     return {
         id: crypto.randomUUID(),
         type: 'line',
@@ -176,11 +176,12 @@ export function createLineData(x1: number, y1: number, x2: number, y2: number, c
         height: y2 - y1,
         color,
         isSelected: true,
-        zIndex: Date.now()
+        zIndex: Date.now(),
+        rotation: r,
     }
 }
 
-export function createRectangleData(x: number, y: number, width: number, height: number, color: string): RectangleData {
+export function createRectangleData(x: number, y: number, width: number, height: number, color: string, r: number = 0): RectangleData {
     return {
         id: crypto.randomUUID(),
         type: 'rectangle',
@@ -190,11 +191,12 @@ export function createRectangleData(x: number, y: number, width: number, height:
         height,
         color,
         isSelected: true,
-        zIndex: Date.now()
+        zIndex: Date.now(),
+        rotation: r
     }
 }
 
-export function createCircleData(x: number, y: number, radiusX: number, radiusY: number, color: string): CircleData {
+export function createCircleData(x: number, y: number, radiusX: number, radiusY: number, color: string, r: number = 0): CircleData {
     return {
         id: crypto.randomUUID(),
         type: 'circle',
@@ -204,11 +206,12 @@ export function createCircleData(x: number, y: number, radiusX: number, radiusY:
         height: radiusY * 2,
         color,
         isSelected: true,
-        zIndex: Date.now()
+        zIndex: Date.now(),
+        rotation: r
     }
 }
 
-export function createTextData(x: number, y: number, color: string, text: string): TextData {
+export function createTextData(x: number, y: number, color: string, text: string, r: number = 0): TextData {
     return {
         id: crypto.randomUUID(),
         type: 'text',
@@ -221,5 +224,6 @@ export function createTextData(x: number, y: number, color: string, text: string
         zIndex: Date.now(),
         text,
         fontSize: 24,
+        rotation: r
     }
 }
