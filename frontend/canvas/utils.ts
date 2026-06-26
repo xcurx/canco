@@ -1,3 +1,4 @@
+import { unrotateCoords } from './selection'
 import { CanvasCoords, ShapeData } from './type'
 
 export function calculateResize(
@@ -110,6 +111,48 @@ export function calculateResize(
         }
     }
 
+    return newDimensions
+}
+
+export function calculateRotatedResize(
+    shape: ShapeData, 
+    handle: {type: string}, 
+    coords: CanvasCoords
+): Partial<ShapeData> {
+    const unrotatedCoords = unrotateCoords(coords, shape)
+    const newDimensions = calculateResize(shape, handle, unrotatedCoords)
+
+    if (shape.rotation) {
+        // find old center
+        const oldCenterX = shape.x + shape.width / 2
+        const oldCenterY = shape.y + shape.height / 2
+        
+        // find new local center based on new dimensions (fallback to old if unchanged)
+        const newLocalX = newDimensions.x !== undefined ? newDimensions.x : shape.x
+        const newLocalY = newDimensions.y !== undefined ? newDimensions.y : shape.y
+        const newLocalW = newDimensions.width !== undefined ? newDimensions.width : shape.width
+        const newLocalH = newDimensions.height !== undefined ? newDimensions.height : shape.height
+        
+        const newLocalCenterX = newLocalX + newLocalW / 2
+        const newLocalCenterY = newLocalY + newLocalH / 2
+        
+        // shift of center in local space
+        const dxLocal = newLocalCenterX - oldCenterX
+        const dyLocal = newLocalCenterY - oldCenterY
+        
+        // rotate this shift back to world space
+        const angleInRadians = (shape.rotation * Math.PI) / 180;
+        const dxWorld = dxLocal * Math.cos(angleInRadians) - dyLocal * Math.sin(angleInRadians);
+        const dyWorld = dxLocal * Math.sin(angleInRadians) + dyLocal * Math.cos(angleInRadians);
+        
+        // true world center
+        const newWorldCenterX = oldCenterX + dxWorld
+        const newWorldCenterY = oldCenterY + dyWorld
+        
+        // final top-left coordinates that keep the opposite corner fixed in world space
+        newDimensions.x = newWorldCenterX - newLocalW / 2
+        newDimensions.y = newWorldCenterY - newLocalH / 2
+    }
     return newDimensions
 }
 
