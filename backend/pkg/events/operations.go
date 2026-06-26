@@ -135,6 +135,9 @@ func updateShape(op types.Operation, room *types.Room, userID string, db *databa
 			if changes.ZIndex != nil {
 				shape.ZIndex = *changes.ZIndex
 			}
+			if changes.Rotation != nil {
+                shape.Rotation = *changes.Rotation
+			}
 			if changes.Text != nil {
 				shape.Text = *changes.Text
 			}
