@@ -56,10 +56,20 @@ export function calculateResize(
 
     // Ensure minimum size
     if (shape.type !== "line" && newDimensions.width !== undefined) {
-        newDimensions.width = Math.max(newDimensions.width, 15)
+        if (newDimensions.width < 15) {
+            newDimensions.width = 15
+            if (['top-left', 'middle-left', 'bottom-left'].includes(handle.type)) {
+                newDimensions.x = (shape.x + shape.width) - 15
+            }
+        }
     }
     if (shape.type !== "line" && newDimensions.height !== undefined) {
-        newDimensions.height = Math.max(newDimensions.height, 15)
+        if (newDimensions.height < 15) {
+            newDimensions.height = 15
+            if (['top-left', 'top-middle', 'top-right'].includes(handle.type)) {
+                newDimensions.y = (shape.y + shape.height) - 15
+            }
+        }
     }
 
     // Text scaling logic
@@ -71,6 +81,19 @@ export function calculateResize(
                 if (!tempCtx) throw new Error("Could not get 2D context from canvas")
                 
                 tempCtx.font = `${textShape.fontSize}px sans-serif`
+                
+                let minAllowedWidth = 15;
+                for (const char of textShape.text) {
+                    minAllowedWidth = Math.max(minAllowedWidth, tempCtx.measureText(char).width);
+                }
+                
+                if (newDimensions.width < minAllowedWidth) {
+                    newDimensions.width = minAllowedWidth;
+                    if (handle.type === 'middle-left') {
+                        newDimensions.x = (shape.x + shape.width) - minAllowedWidth;
+                    }
+                }
+                
                 const lines = wrapText(tempCtx, textShape.text, newDimensions.width)
                 newDimensions.height = (lines.length) * textShape.fontSize * 1.2
             }
