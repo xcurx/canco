@@ -118,7 +118,8 @@ export function wrapText(
                 } else {
                     // when word is too long for the box so break it by character.
                     if (currentLine !== '') {
-                        currentLine += space
+                        lines.push(currentLine)
+                        currentLine = ''
                     }
 
                     for (let j = 0; j < word.length; j++) {
