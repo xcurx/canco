@@ -82,6 +82,7 @@ export enum CanvasState {
     MOVING_OBJECT = "moving_object",
     RESIZING_OBJECT = "resizing_object",
     PANNING = "panning",
+    ROTATING_OBJECT = "rotating_object"
 }
 
 export const SELECTION_PADDING = 5
