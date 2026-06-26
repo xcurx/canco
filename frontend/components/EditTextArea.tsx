@@ -106,6 +106,8 @@ export const EditTextarea = () => {
                 position: 'absolute',
                 left: pos.x,
                 top: pos.y - topOffset,
+                transform: `rotate(${editingText.rotation || 0}deg) translateY(-${topOffset}px)`,
+                transformOrigin: `${(editingText.width * scale) / 2}px ${(editingText.height * scale) / 2}px`,
                 minWidth: '20px',
                 width: `${Math.max(20, editingText.width * scale)}px`,
                 height: `${Math.max(28.8, editingText.height * scale)}px`,
