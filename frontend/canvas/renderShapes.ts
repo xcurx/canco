@@ -66,6 +66,18 @@ export function renderCircle(ctx: CanvasRenderingContext2D, shape: CircleData): 
 }
 
 export function renderShape(ctx: CanvasRenderingContext2D, shape: ShapeData): void {
+    ctx.save()
+    // move origin to center of shape
+    const centerX = shape.x + shape.width / 2
+    const centerY = shape.y + shape.height / 2
+    ctx.translate(centerX, centerY)
+    ctx.rotate(shape.rotation * Math.PI / 180) // degrees
+    // temporarily shift shape coords so it draws correctly around the new center
+    const originalX = shape.x
+    const originalY = shape.y
+    shape.x = -shape.width / 2
+    shape.y = -shape.height / 2
+
     switch (shape.type) {
         case 'line':
             renderLine(ctx, shape)
@@ -82,6 +94,11 @@ export function renderShape(ctx: CanvasRenderingContext2D, shape: ShapeData): vo
         default:
             console.warn(`Unknown shape type: ${(shape as any).type}`)
     }
+
+    // restore coordinates
+    shape.x = originalX
+    shape.y = originalY
+    ctx.restore()
 }
 
 export function renderText(ctx: CanvasRenderingContext2D, shape: TextData): void {
@@ -105,7 +122,8 @@ export function renderText(ctx: CanvasRenderingContext2D, shape: TextData): void
 
 export function drawSelectionCage(ctx: CanvasRenderingContext2D, shape: ShapeData): void {
     ctx.save()
-    const scale = ctx.getTransform().a
+    const transform = ctx.getTransform()
+    const scale = Math.sqrt(transform.a * transform.a + transform.b * transform.b)
     const handles = getResizeHandles(shape, scale)
 
     if (shape.type !== 'line') {
