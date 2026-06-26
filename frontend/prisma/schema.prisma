@@ -106,6 +106,7 @@ model Shape {
   height   Float
   color    String
   zIndex   Int
+  rotation Float  @default(0)
 
   text     String?
   fontSize Float?

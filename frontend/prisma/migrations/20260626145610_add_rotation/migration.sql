@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Shape" ADD COLUMN     "rotation" DOUBLE PRECISION NOT NULL DEFAULT 0;
