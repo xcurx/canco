@@ -132,6 +132,15 @@ func updateShape(op types.Operation, room *types.Room, userID string, db *databa
 			if changes.Color != nil {
 				shape.Color = *changes.Color
 			}
+			if changes.ZIndex != nil {
+				shape.ZIndex = *changes.ZIndex
+			}
+			if changes.Text != nil {
+				shape.Text = *changes.Text
+			}
+			if changes.FontSize != nil {
+				shape.FontSize = *changes.FontSize
+			}
 			room.RoomState.Shapes[i] = shape
 			break
 		}

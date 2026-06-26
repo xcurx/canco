@@ -254,6 +254,12 @@ func applyOperationToRoomState(op *types.Operation, room *types.Room, db *databa
 				if changes.ZIndex != nil {
 					room.RoomState.Shapes[i].ZIndex = *changes.ZIndex
 				}
+				if changes.Text != nil {
+					room.RoomState.Shapes[i].Text = *changes.Text
+				}
+				if changes.FontSize != nil {
+					room.RoomState.Shapes[i].FontSize = *changes.FontSize
+				}
 				break
 			}
 		}
