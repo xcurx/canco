@@ -26,7 +26,7 @@ func (q *Queries) DeleteShape(ctx context.Context, arg DeleteShapeParams) error 
 }
 
 const getShape = `-- name: GetShape :one
-SELECT id, type, x, y, width, height, color, "zIndex", "text", "fontSize", "canvasId", "updatedAt"
+SELECT id, type, x, y, width, height, color, "zIndex", "rotation", "text", "fontSize", "canvasId", "updatedAt"
 FROM "Shape"
 WHERE id = $1
 `
@@ -40,6 +40,7 @@ type GetShapeRow struct {
 	Height    float64          `json:"height"`
 	Color     string           `json:"color"`
 	ZIndex    int32            `json:"zIndex"`
+	Rotation  float64          `json:"rotation"`
 	Text      pgtype.Text      `json:"text"`
 	FontSize  pgtype.Float8    `json:"fontSize"`
 	CanvasId  string           `json:"canvasId"`
@@ -58,6 +59,7 @@ func (q *Queries) GetShape(ctx context.Context, id string) (GetShapeRow, error) 
 		&i.Height,
 		&i.Color,
 		&i.ZIndex,
+		&i.Rotation,
 		&i.Text,
 		&i.FontSize,
 		&i.CanvasId,
@@ -67,7 +69,7 @@ func (q *Queries) GetShape(ctx context.Context, id string) (GetShapeRow, error) 
 }
 
 const getShapesByCanvasId = `-- name: GetShapesByCanvasId :many
-SELECT id, type, x, y, width, height, color, "zIndex", "text", "fontSize", "canvasId", "updatedAt"
+SELECT id, type, x, y, width, height, color, "zIndex", "rotation", "text", "fontSize", "canvasId", "updatedAt"
 FROM "Shape"
 WHERE "canvasId" = $1
 `
@@ -81,6 +83,7 @@ type GetShapesByCanvasIdRow struct {
 	Height    float64          `json:"height"`
 	Color     string           `json:"color"`
 	ZIndex    int32            `json:"zIndex"`
+	Rotation  float64          `json:"rotation"`
 	Text      pgtype.Text      `json:"text"`
 	FontSize  pgtype.Float8    `json:"fontSize"`
 	CanvasId  string           `json:"canvasId"`
@@ -105,6 +108,7 @@ func (q *Queries) GetShapesByCanvasId(ctx context.Context, canvasid string) ([]G
 			&i.Height,
 			&i.Color,
 			&i.ZIndex,
+			&i.Rotation,
 			&i.Text,
 			&i.FontSize,
 			&i.CanvasId,
@@ -131,6 +135,7 @@ SET type = EXCLUDED.type,
     height = EXCLUDED.height,
     color = EXCLUDED.color,
     "zIndex" = EXCLUDED."zIndex",
+    "rotation" = EXCLUDED."rotation",
     "text" = EXCLUDED."text",
     "fontSize" = EXCLUDED."fontSize",
     "canvasId" = EXCLUDED."canvasId",

@@ -108,6 +108,7 @@ type Shape struct {
 	UpdatedAt pgtype.Timestamp `json:"updatedAt"`
 	FontSize  pgtype.Float8    `json:"fontSize"`
 	Text      pgtype.Text      `json:"text"`
+	Rotation  float64          `json:"rotation"`
 }
 
 type User struct {

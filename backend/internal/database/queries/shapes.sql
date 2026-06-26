@@ -1,5 +1,5 @@
 -- name: GetShape :one
-SELECT id, type, x, y, width, height, color, "zIndex", "text", "fontSize", "canvasId", "updatedAt"
+SELECT id, type, x, y, width, height, color, "zIndex", "rotation", "text", "fontSize", "canvasId", "updatedAt"
 FROM "Shape"
 WHERE id = $1;
 
@@ -14,6 +14,7 @@ SET type = EXCLUDED.type,
     height = EXCLUDED.height,
     color = EXCLUDED.color,
     "zIndex" = EXCLUDED."zIndex",
+    "rotation" = EXCLUDED."rotation",
     "text" = EXCLUDED."text",
     "fontSize" = EXCLUDED."fontSize",
     "canvasId" = EXCLUDED."canvasId",
@@ -23,6 +24,6 @@ SET type = EXCLUDED.type,
 DELETE FROM "Shape" WHERE id = $1 AND "canvasId" = $2;
 
 -- name: GetShapesByCanvasId :many
-SELECT id, type, x, y, width, height, color, "zIndex", "text", "fontSize", "canvasId", "updatedAt"
+SELECT id, type, x, y, width, height, color, "zIndex", "rotation", "text", "fontSize", "canvasId", "updatedAt"
 FROM "Shape"
 WHERE "canvasId" = $1;
