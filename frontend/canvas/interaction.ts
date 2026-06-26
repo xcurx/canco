@@ -13,7 +13,7 @@ import {
 import { ToolManager } from './tools'
 import { Camera } from './camera'
 import { ShortcutManager } from './shortcuts'
-import { calculateResize } from './utils'
+import { calculateRotatedResize } from './utils'
 
 export type InteractionCallbacks = {
     onStateChange: (state: CanvasStateEnum) => void
@@ -130,6 +130,10 @@ export class InteractionManager {
                 this.handleResizeObjectMove(coords)
                 break
 
+            case CanvasStateEnum.ROTATING_OBJECT:
+                this.handleShapeRotationMove(coords)
+                break
+
             case CanvasStateEnum.PANNING:
                 this.handlePanMove(e);
                 break
@@ -151,6 +155,10 @@ export class InteractionManager {
 
             case CanvasStateEnum.RESIZING_OBJECT:
                 this.finishResizeShape(coords)
+                break
+
+            case CanvasStateEnum.ROTATING_OBJECT:
+                this.finishRotateShape(coords)
                 break
             
             case CanvasStateEnum.PANNING:
@@ -203,7 +211,13 @@ export class InteractionManager {
 
     private handleResizeHandleClick(coords: CanvasCoords, selectedShape: ShapeData): boolean {
         const clickedHandle = getClickedHandle(coords, selectedShape, this.camera.scale)
-        if (clickedHandle) {
+        if (clickedHandle && clickedHandle.type == "rotation") {
+            this.state = CanvasStateEnum.ROTATING_OBJECT
+            this.resizeHandle = clickedHandle
+            this.originalShape = { ...selectedShape }
+            this.callbacks.onStateChange(this.state)
+            return true
+        } else if (clickedHandle) {
             this.state = CanvasStateEnum.RESIZING_OBJECT
             this.resizeHandle = clickedHandle
             this.originalShape = { ...selectedShape }
@@ -237,12 +251,12 @@ export class InteractionManager {
                 this.callbacks.onApplyOperation(CanvasState.selectShape(shapes[i].id), true)
                 
                 // prepare for potential drag
-                this.state = CanvasStateEnum.MOVING_OBJECT
-                this.dragOffset = {
-                    x: coords.x - shapes[i].x,
-                    y: coords.y - shapes[i].y
-                }
-                this.originalShape = { ...shapes[i] }
+                // this.state = CanvasStateEnum.MOVING_OBJECT
+                // this.dragOffset = {
+                //     x: coords.x - shapes[i].x,
+                //     y: coords.y - shapes[i].y
+                // }
+                // this.originalShape = { ...shapes[i] }
                 this.callbacks.onStateChange(this.state)
                 return true
             }
@@ -296,10 +310,26 @@ export class InteractionManager {
 
     private handleResizeObjectMove(coords: CanvasCoords): void {
         const selectedShape = this.getCanvasState().getSelectedShape()
-        if (selectedShape && this.resizeHandle) {
-            const newDimensions = calculateResize(selectedShape, this.resizeHandle, coords)
+        if (selectedShape && this.resizeHandle && this.originalShape) {
+            const newDimensions = calculateRotatedResize(this.originalShape, this.resizeHandle, coords)
             this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, newDimensions), false)
         }
+    }
+
+    private handleShapeRotationMove(coords: CanvasCoords): void {
+        const selectedShape = this.getCanvasState().getSelectedShape()
+        if (selectedShape && this.resizeHandle && this.originalShape) {
+            const center = {
+                x: this.originalShape.x + this.originalShape.width / 2,
+                y: this.originalShape.y + this.originalShape.height / 2
+            }
+            // angle between center and cursor
+            let angle = Math.atan2(coords.y - center.y, coords.x - center.x) * (180 / Math.PI)
+            // 90 degree offset because handle is at top
+            angle = (angle + 90) % 360;
+            const changes = { rotation: angle };
+            this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, changes), false)
+        }   
     }
 
     private handlePanMove(e: MouseEvent): void {
@@ -338,9 +368,24 @@ export class InteractionManager {
 
     private finishResizeShape(coords: CanvasCoords): void {
         const selectedShape = this.getCanvasState().getSelectedShape()
-        if (selectedShape && this.resizeHandle) {
-            const newDimensions = calculateResize(selectedShape, this.resizeHandle, coords)
+        if (selectedShape && this.resizeHandle && this.originalShape) {
+            const newDimensions = calculateRotatedResize(this.originalShape, this.resizeHandle, coords)
             this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, newDimensions), true, this.originalShape ?? undefined)
+        }
+    }
+
+    private finishRotateShape(coords: CanvasCoords): void {
+        const selectedShape = this.getCanvasState().getSelectedShape()
+        if (selectedShape && this.resizeHandle && this.originalShape) {
+            const center = {
+                x: this.originalShape.x + this.originalShape.width / 2,
+                y: this.originalShape.y + this.originalShape.height / 2
+            }
+            // angle between center and cursor
+            let angle = Math.atan2(coords.y - center.y, coords.x - center.x) * (180 / Math.PI)
+            // 90 degree offset because handle is at top
+            angle = (angle + 90) % 360;
+            this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, { rotation: angle }), true, this.originalShape ?? undefined)
         }
     }
 
