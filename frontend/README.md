@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Canco Frontend
 
-## Getting Started
+This is the Next.js frontend for the Canco collaborative drawing application.
 
-First, run the development server:
+## Technologies Used
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript & React 19
+- **Styling**: Tailwind CSS v4 & Radix UI Primitives
+- **Authentication**: NextAuth.js (Auth.js v5)
+- **Database ORM**: Prisma (PostgreSQL)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Interactive Canvas Engine**: A custom built rendering and interaction system for drawing shapes, freehand strokes, and text.
+- **Real-Time Sync**: Connects to the Go backend via WebSockets to synchronize drawing events in real-time.
+- **Local & Cloud Modes**: Use the canvas locally without an account, or sign in via OAuth to persist canvases to the database.
+- **Dashboard**: A user interface for authenticated users to manage their saved canvases.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Initialization Flow
 
-## Learn More
+1. **Routing & Authentication**: Next.js handles routing. The homepage (`/`) checks user sessions. Unauthenticated users see a landing page, while authenticated users see their dashboard.
+2. **Canvas Mounting**: When navigating to `/canvas/[roomId]`, the `CanvasClient` component initializes. It fetches the canvas state and sets up event listeners.
+3. **WebSocket Connection**: If it's a persistent canvas, a WebSocket connection is established with the Go backend, passing the user's session token for validation.
+4. **Rendering Loop**: The HTML5 canvas context is continuously updated with local actions and remote events received via the WebSocket.
 
-To learn more about Next.js, take a look at the following resources:
+## Local Development
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+First, make sure you have `pnpm` and Node.js installed.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Install dependencies:**
+   ```bash
+   pnpm install
+   ```
 
-## Deploy on Vercel
+2. **Environment Setup:**
+   Create a `.env` file in this directory with the following variables (adjust based on your setup):
+   ```env
+   DATABASE_URL="postgresql://user:password@localhost:5432/canco"
+   AUTH_SECRET="your-secret"
+   AUTH_GOOGLE_ID="your-google-client-id"
+   AUTH_GOOGLE_SECRET="your-google-client-secret"
+   NEXT_PUBLIC_WS_URL="ws://localhost:7860" # URL to your Go backend
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. **Database Setup:**
+   ```bash
+   npx prisma db push
+   # or
+   npx prisma migrate dev
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. **Run the Development Server:**
+   ```bash
+   pnpm dev
+   ```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
