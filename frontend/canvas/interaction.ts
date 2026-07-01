@@ -249,14 +249,6 @@ export class InteractionManager {
             if (isPointInShape(coords, shapes[i])) {
                 // select the shape
                 this.callbacks.onApplyOperation(CanvasState.selectShape(shapes[i].id), true)
-                
-                // prepare for potential drag
-                // this.state = CanvasStateEnum.MOVING_OBJECT
-                // this.dragOffset = {
-                //     x: coords.x - shapes[i].x,
-                //     y: coords.y - shapes[i].y
-                // }
-                // this.originalShape = { ...shapes[i] }
                 this.callbacks.onStateChange(this.state)
                 return true
             }
