@@ -70,6 +70,9 @@ const Options = () => {
             renderer.setHistoryCallbacks({
                 onHistoryChange: handleHistoryChange
             })
+            renderer.setToolCallbacks({
+                onToolChange: (tool) => setCurrentOption(tool || "")
+            })
         }
     }, [renderer])
 

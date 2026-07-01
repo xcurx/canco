@@ -3,14 +3,22 @@ import { createRectangleData, createCircleData, createLineData, createTextData }
 
 export type ToolType = 'rectangle' | 'circle' | 'line' | 'text' | null
 
+export interface ToolManagerCallbacks {
+    onToolChange: (tool: ToolType) => void
+}
+
 export class ToolManager {
     private currentTool: ToolType = null
     private color: string = 'white'
     private strokeWidth: number = 2
 
+    constructor (private callbacks?: ToolManagerCallbacks) {
+        this.callbacks = callbacks
+    }
+
     setCurrentTool(tool: ToolType): void {
         this.currentTool = tool
-        console.log(`Tool changed to: ${tool || 'none'}`)
+        this.callbacks?.onToolChange(tool)
     }
 
     getCurrentTool(): ToolType {
@@ -19,6 +27,10 @@ export class ToolManager {
 
     hasActiveTool(): boolean {
         return this.currentTool !== null
+    }
+
+    setCallbacks(callbacks: ToolManagerCallbacks) {
+        this.callbacks = callbacks
     }
 
     createShape(startCoords: CanvasCoords): ShapeData | null {
@@ -123,6 +135,6 @@ export class ToolManager {
 
     clearTool(): void {
         this.currentTool = null
-        console.log('Tool cleared')
+        this.callbacks?.onToolChange(null)
     }
 }

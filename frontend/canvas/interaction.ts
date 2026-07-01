@@ -405,6 +405,7 @@ export class InteractionManager {
         this.tempShape = null
         this.originalShape = null
         
+        this.toolManager.clearTool()
         this.callbacks.onStateChange(this.state)
         this.callbacks.onUpdateTempShape(null)
     }

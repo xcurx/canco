@@ -2,7 +2,7 @@ import { ShapeData, CanvasState as CanvasStateEnum, Operation } from './type'
 import { CanvasState } from './state'
 import { renderShape } from './renderShapes'
 import { HistoryCallbacks, HistoryManager } from './history'
-import { ToolManager } from './tools'
+import { ToolManager, ToolManagerCallbacks } from './tools'
 import { InteractionManager, InteractionCallbacks } from './interaction'
 import { Socket, Message } from '../websocket/socket'
 import { Camera } from './camera'
@@ -290,6 +290,10 @@ export class Renderer {
 
     setHistoryCallbacks(callbacks: HistoryCallbacks): void {
         this.historyManager.setCallbacks(callbacks)
+    }
+
+    setToolCallbacks(callbacks: ToolManagerCallbacks): void {
+        this.toolManager.setCallbacks(callbacks)
     }
 
     clear(): void {
