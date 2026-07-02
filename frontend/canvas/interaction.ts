@@ -75,7 +75,7 @@ export class InteractionManager implements InteractionContext {
         if (e.button === 2) { e.preventDefault(); return }
         
         // panning priority
-        if (e.button === 1 || this.state === CanvasStateEnum.PANNING) {
+        if (this.toolManager.getCurrentTool() === 'pan' || e.button === 1 || this.state === CanvasStateEnum.PANNING) {
             this.activeHandler = new PanHandler(this, e)
             this.canvas.style.cursor = 'grabbing'
             return
@@ -162,7 +162,6 @@ export class InteractionManager implements InteractionContext {
                 this.canvas.style.cursor = this.toolManager.hasActiveTool() ? 'crosshair' : 'default'
             }
         }
-        this.toolManager.setCurrentTool('select')
     }
 
     handleWheel(e: WheelEvent): void {

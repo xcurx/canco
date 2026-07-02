@@ -244,6 +244,11 @@ export class Renderer {
 
     setCurrentTool(tool: string | null): void {
         this.toolManager.setCurrentTool(tool as any)
+        if (this.toolManager.getCurrentTool() === 'pan') {
+            this.currentInteractionState = CanvasStateEnum.PANNING
+        } else {
+            this.currentInteractionState = CanvasStateEnum.IDLE
+        }
         this.updateCursor(this.currentInteractionState)
         console.log(`Tool set to: ${tool}`)
     }

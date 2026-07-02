@@ -1,7 +1,7 @@
 import { RendererContext } from '@/components/renderer-context'
-import React, { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { RectangleHorizontal, Circle as CircleIcon, LineChartIcon, Undo, Redo, Type, Pointer, TextCursor, MousePointer, MousePointer2, MousePointer2Icon } from 'lucide-react'
+import { RectangleHorizontal, Circle as CircleIcon, LineChartIcon, Undo, Redo, Type, MousePointer2, Hand } from 'lucide-react'
 import { Button } from './ui/button'
 
 const Options = () => {
@@ -17,6 +17,12 @@ const Options = () => {
         if (value === "select") {
             setCurrentOption("select")
             renderer.setCurrentTool(null)
+            return
+        }
+
+        if (value === "pan") {
+            setCurrentOption("pan")
+            renderer.setCurrentTool("pan")
             return
         }
 
@@ -88,6 +94,7 @@ const Options = () => {
             onValueChange={(value) => handleOptionChange(value)}
         >
             <ToggleGroupItem value="select"><MousePointer2/></ToggleGroupItem>
+            <ToggleGroupItem value="pan"><Hand/></ToggleGroupItem>
             <ToggleGroupItem value="rectangle"><RectangleHorizontal/></ToggleGroupItem>
             <ToggleGroupItem value="circle"><CircleIcon/></ToggleGroupItem>   
             <ToggleGroupItem value="line"><LineChartIcon/></ToggleGroupItem>
