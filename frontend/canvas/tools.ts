@@ -1,7 +1,7 @@
 import { ShapeData, CanvasCoords, RectangleData, CircleData } from './type'
 import { createRectangleData, createCircleData, createLineData, createTextData } from './state'
 
-export type ToolType = 'rectangle' | 'circle' | 'line' | 'text' | null
+export type ToolType = 'rectangle' | 'circle' | 'line' | 'text' | 'select' | null
 
 export interface ToolManagerCallbacks {
     onToolChange: (tool: ToolType) => void

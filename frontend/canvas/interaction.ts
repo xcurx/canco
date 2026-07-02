@@ -162,6 +162,7 @@ export class InteractionManager implements InteractionContext {
                 this.canvas.style.cursor = this.toolManager.hasActiveTool() ? 'crosshair' : 'default'
             }
         }
+        this.toolManager.setCurrentTool('select')
     }
 
     handleWheel(e: WheelEvent): void {

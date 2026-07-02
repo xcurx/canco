@@ -1,12 +1,12 @@
 import { RendererContext } from '@/components/renderer-context'
 import React, { useContext, useEffect, useState } from 'react'
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { RectangleHorizontal, Circle as CircleIcon, LineChartIcon, Undo, Redo, Type } from 'lucide-react'
+import { RectangleHorizontal, Circle as CircleIcon, LineChartIcon, Undo, Redo, Type, Pointer, TextCursor, MousePointer, MousePointer2, MousePointer2Icon } from 'lucide-react'
 import { Button } from './ui/button'
 
 const Options = () => {
     const {renderer} = useContext(RendererContext)
-    const [currentOption, setCurrentOption] = useState<string | undefined>("")
+    const [currentOption, setCurrentOption] = useState<string | undefined>("select")
     const [canUndo, setCanUndo] = useState(false)
     const [canRedo, setCanRedo] = useState(false)
 
@@ -14,8 +14,8 @@ const Options = () => {
         if (!renderer) return
         console.log("Option changed to: ", value);
 
-        if (value === "") {
-            setCurrentOption("")
+        if (value === "select") {
+            setCurrentOption("select")
             renderer.setCurrentTool(null)
             return
         }
@@ -71,7 +71,7 @@ const Options = () => {
                 onHistoryChange: handleHistoryChange
             })
             renderer.setToolCallbacks({
-                onToolChange: (tool) => setCurrentOption(tool || "")
+                onToolChange: (tool) => setCurrentOption(tool || "select")
             })
         }
     }, [renderer])
@@ -87,6 +87,7 @@ const Options = () => {
             value={currentOption}
             onValueChange={(value) => handleOptionChange(value)}
         >
+            <ToggleGroupItem value="select"><MousePointer2/></ToggleGroupItem>
             <ToggleGroupItem value="rectangle"><RectangleHorizontal/></ToggleGroupItem>
             <ToggleGroupItem value="circle"><CircleIcon/></ToggleGroupItem>   
             <ToggleGroupItem value="line"><LineChartIcon/></ToggleGroupItem>
