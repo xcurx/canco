@@ -8,6 +8,8 @@ export type ShortcutCallbacks = {
 }
 
 export class ShortcutManager {
+    private pressedKey: string | null = null;
+
     constructor(private callbacks: ShortcutCallbacks) {
         this.addEventListners()
     }
@@ -27,6 +29,8 @@ export class ShortcutManager {
         if (document.activeElement?.tagName === 'TEXTAREA' || document.activeElement?.tagName === 'INPUT') {
             return
         }
+
+        this.pressedKey = e.key;
 
         let handled = false
 
@@ -61,8 +65,14 @@ export class ShortcutManager {
     }
 
     private handleKeyUp = (e: KeyboardEvent) => {
+        this.pressedKey = null;
+        
         if (e.code === 'Space') {
             this.callbacks.onSpaceUp()
         }
+    }
+
+    public getPressedKey() : string | null {
+        return this.pressedKey;
     }
 }

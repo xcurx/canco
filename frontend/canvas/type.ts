@@ -33,7 +33,7 @@ export type ShapeData = RectangleData | CircleData | LineData | TextData
 
 export interface Operation {
     id: string
-    type: 'CREATE_SHAPE' | 'UPDATE_SHAPE' | 'DELETE_SHAPE' | 'SELECT_SHAPE' | 'DESELECT_ALL'
+    type: 'CREATE_SHAPE' | 'UPDATE_SHAPE' | 'DELETE_SHAPE' | 'SELECT_SHAPE' | 'MULTISELECT_SHAPES' | 'DESELECT_ALL' | 'UPDATE_SHAPES' | 'CREATE_SHAPES' | 'DELETE_SHAPES'
     timestamp: number
     data: any
     inverse?: Operation
@@ -69,9 +69,38 @@ export interface SelectShapeOperation extends Operation {
     }
 }
 
+export interface MultiSelectOperation extends Operation {
+    type: 'MULTISELECT_SHAPES'
+    data: {
+        id: string
+    }
+}
+
 export interface DeselectAllOperation extends Operation {
     type: 'DESELECT_ALL'
     data: {}
+}
+
+export interface UpdateShapesOperation extends Operation {
+    type: 'UPDATE_SHAPES'
+    data: {
+        updates: Array<{
+            id: string,
+            changes: Partial<ShapeData>
+        }>    
+    }
+}
+export interface CreateShapesOperation extends Operation {
+    type: 'CREATE_SHAPES'
+    data: {
+        shapes: ShapeData[]
+    }
+}
+export interface DeleteShapesOperation extends Operation {
+    type: 'DELETE_SHAPES'
+    data: {
+        ids: string[]
+    }
 }
 
 export type CanvasCoords = {x: number, y: number}

@@ -8,12 +8,18 @@ import {
     DeselectAllOperation,
     RectangleData,
     CircleData,
-    TextData
+    TextData,
+    MultiSelectOperation,
+    UpdateShapesOperation,
+    CreateShapesOperation,
+    DeleteShapesOperation
 } from './type'
 
 export class CanvasState {
     private shapes: Map<string, ShapeData> = new Map()
     private selectedShapeId: string | null = null
+    private selectedShapeIds: string[] = []
+    public isMultiSelected = false
 
     constructor(initialShapes?: ShapeData[]) {
         initialShapes?.forEach(shape => {
@@ -27,6 +33,9 @@ export class CanvasState {
     static applyOperation(currentState: CanvasState, operation: Operation): CanvasState {
         const newShapes = new Map(currentState.shapes)
         let newSelectId = currentState.selectedShapeId
+        let isMultiSelected = currentState.isMultiSelected
+        let selectedShapeIds: string[] = currentState.selectedShapeIds
+
         if (!operation) return currentState
         console.log("Applying operation in CanvasState:", operation)
 
@@ -78,6 +87,28 @@ export class CanvasState {
                     newShapes.set(selectOp.data.id, { ...targetShape, isSelected: true })
                     newSelectId = selectOp.data.id
                 }
+                isMultiSelected = false
+                selectedShapeIds = []
+                break
+            }
+
+            case 'MULTISELECT_SHAPES': {
+                const multiSelectOp = operation as MultiSelectOperation
+                const targetShape = newShapes.get(multiSelectOp.data.id)
+                if (targetShape) {
+                    const isCurrentlySelected = targetShape.isSelected
+                    newShapes.set(multiSelectOp.data.id, { ...targetShape, isSelected: !isCurrentlySelected })
+                    
+                    // update selectedShapeIds list
+                    if (isCurrentlySelected) {
+                        selectedShapeIds = selectedShapeIds.filter(id => id !== targetShape.id)
+                    } else {
+                        selectedShapeIds.push(targetShape.id)
+                    }
+                    
+                    isMultiSelected = selectedShapeIds.length > 1
+                    newSelectId = selectedShapeIds.length === 1 ? selectedShapeIds[0] : null
+                }
                 break
             }
 
@@ -87,6 +118,38 @@ export class CanvasState {
                         newShapes.set(id, { ...shape, isSelected: false })
                     }
                 })
+                isMultiSelected = false
+                selectedShapeIds = []
+                newSelectId = null
+                break
+            }
+
+            case 'UPDATE_SHAPES': {
+                const updateOp = operation as UpdateShapesOperation
+                updateOp.data.updates.forEach(({ id, changes }) => {
+                    const existingShape = newShapes.get(id)
+                    if (existingShape) {
+                        newShapes.set(id, { ...existingShape, ...changes } as ShapeData)
+                    }
+                })
+                break
+            }
+
+            case 'CREATE_SHAPES': {
+                const createOp = operation as CreateShapesOperation
+                createOp.data.shapes.forEach(shape => {
+                    newShapes.set(shape.id, shape)
+                })
+                break
+            }
+
+            case 'DELETE_SHAPES': {
+                const deleteOp = operation as DeleteShapesOperation
+                deleteOp.data.ids.forEach(id => {
+                    newShapes.delete(id)
+                })
+                isMultiSelected = false
+                selectedShapeIds = []
                 newSelectId = null
                 break
             }
@@ -98,6 +161,8 @@ export class CanvasState {
         const newState = new CanvasState([])
         newState.shapes = newShapes
         newState.selectedShapeId = newSelectId
+        newState.isMultiSelected = isMultiSelected
+        newState.selectedShapeIds = selectedShapeIds
         return newState
     }
 
@@ -114,6 +179,13 @@ export class CanvasState {
             return this.shapes.get(this.selectedShapeId) || null
         }
         return null
+    }
+
+    getSelectedShapes(): ShapeData[] {
+        if (this.isMultiSelected) {
+            return this.getAllShapes().filter((shape) => shape.isSelected)
+        }
+        return []
     }
 
     hasShapes(): boolean {
@@ -156,12 +228,46 @@ export class CanvasState {
         }
     }
 
+    static multiSelectShapes(id: string): MultiSelectOperation {
+        return {
+            id: crypto.randomUUID(),
+            type: 'MULTISELECT_SHAPES',
+            timestamp: Date.now(),
+            data: { id }
+        }
+    }
+
     static deselectAll(): DeselectAllOperation {
         return {
             id: crypto.randomUUID(),
             type: 'DESELECT_ALL',
             timestamp: Date.now(),
             data: {}
+        }
+    }
+
+    static updateShapes(updates: Array<{ id: string, changes: Partial<ShapeData> }>): UpdateShapesOperation {
+        return {
+            id: crypto.randomUUID(),
+            type: 'UPDATE_SHAPES',
+            timestamp: Date.now(),
+            data: { updates }
+        }
+    }
+    static createShapes(shapes: ShapeData[]): CreateShapesOperation {
+        return {
+            id: crypto.randomUUID(),
+            type: 'CREATE_SHAPES',
+            timestamp: Date.now(),
+            data: { shapes }
+        }
+    }
+    static deleteShapes(ids: string[]): DeleteShapesOperation {
+        return {
+            id: crypto.randomUUID(),
+            type: 'DELETE_SHAPES',
+            timestamp: Date.now(),
+            data: { ids }
         }
     }
 }

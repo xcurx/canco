@@ -1,6 +1,6 @@
 import { ShapeData, CanvasState as CanvasStateEnum, Operation } from './type'
 import { CanvasState } from './state'
-import { renderShape } from './renderShapes'
+import { drawMultiSelectionCage, renderShape } from './renderShapes'
 import { HistoryCallbacks, HistoryManager } from './history'
 import { ToolManager, ToolManagerCallbacks } from './tools'
 import { InteractionManager, InteractionCallbacks } from './interaction'
@@ -211,6 +211,11 @@ export class Renderer {
                 renderShape(this.ctx, shape)
             }
         })
+
+        if (this.canvasState.isMultiSelected) {
+            const shapes = this.canvasState.getSelectedShapes()
+            drawMultiSelectionCage(this.ctx, shapes)
+        }
         
         if (this.tempShape) {
             renderShape(this.ctx, this.tempShape)

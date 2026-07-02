@@ -1,4 +1,4 @@
-import { CreateShapeOperation, DeleteShapeOperation, Operation, ShapeData, UpdateShapeOperation } from './type'
+import { CreateShapeOperation, CreateShapesOperation, DeleteShapeOperation, DeleteShapesOperation, Operation, ShapeData, UpdateShapeOperation, UpdateShapesOperation } from './type'
 import { CanvasState } from './state'
 
 export type HistoryCallbacks = {
@@ -186,6 +186,49 @@ export class HistoryManager {
                     type: 'SELECT_SHAPE',
                     timestamp: Date.now(),
                     data: { id: selectedShape.id }
+                }
+            }
+
+            case 'UPDATE_SHAPES': {
+                const updateOp = op as UpdateShapesOperation
+                const inverseUpdates = updateOp.data.updates.map(({ id, changes }) => {
+                    const currentShape = state.getShape(id)
+                    const previousValues: Partial<ShapeData> = {}
+                    if (currentShape) {
+                        for (const key of Object.keys(changes) as (keyof ShapeData)[]) {
+                            previousValues[key] = currentShape[key] as any
+                        }
+                    }
+                    return { id, changes: previousValues }
+                })
+                return {
+                    id: crypto.randomUUID(),
+                    type: 'UPDATE_SHAPES',
+                    timestamp: Date.now(),
+                    data: { updates: inverseUpdates }
+                }
+            }
+
+            case "CREATE_SHAPES": {
+                const createOp = op as CreateShapesOperation
+                return {
+                    id: crypto.randomUUID(),
+                    type: "DELETE_SHAPES",
+                    timestamp: Date.now(),
+                    data: { ids: createOp.data.shapes.map(s => s.id) }
+                }
+            }
+
+            case "DELETE_SHAPES": {
+                const deleteOp = op as DeleteShapesOperation
+                const deletedShapes = deleteOp.data.ids
+                    .map(id => state.getShape(id))
+                    .filter((s): s is ShapeData => s !== undefined)
+                return {
+                    id: crypto.randomUUID(),
+                    type: 'CREATE_SHAPES',
+                    timestamp: Date.now(),
+                    data: { shapes: deletedShapes }
                 }
             }
 

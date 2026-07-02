@@ -7,6 +7,8 @@ import {
 import { CanvasState } from './state'
 import { 
     getClickedHandle, 
+    getResizehandlesFromCoords, 
+    isPointInHandle, 
     isPointInShape, 
     isPointInShapeInterior 
 } from './selection'
@@ -34,6 +36,9 @@ export class InteractionManager {
     private startPoint: {x: number, y: number} | null = null
     private tempShape: ShapeData | null = null
     private originalShape: ShapeData | null = null
+    private originalShapes: ShapeData[] = []
+    private originalBoundingBox: {x: number, y: number, width: number, height: number} | null = null
+    private initialRotationAngle: number = 0
 
     private lastPanPoint: {x: number, y: number} | null = null
 
@@ -52,9 +57,17 @@ export class InteractionManager {
             onUndo: () => this.callbacks.onUndo(),
             onRedo: () => this.callbacks.onRedo(),
             onDelete: () => {
-                const selectedShape = this.getCanvasState().getSelectedShape()
-                if (selectedShape) {
-                    this.callbacks.onApplyOperation(CanvasState.deleteShape(selectedShape.id), true)
+                const canvasState = this.getCanvasState()
+                if (canvasState.isMultiSelected) {
+                    const selectedShapes = canvasState.getSelectedShapes()
+                    if (selectedShapes.length > 0) {
+                        this.callbacks.onApplyOperation(CanvasState.deleteShapes(selectedShapes.map(s => s.id)), true)
+                    }
+                } else {
+                    const selectedShape = canvasState.getSelectedShape()
+                    if (selectedShape) {
+                        this.callbacks.onApplyOperation(CanvasState.deleteShape(selectedShape.id), true)
+                    }
                 }
             },
             onEscape: () => {
@@ -94,7 +107,9 @@ export class InteractionManager {
         this.startPoint = coords
         const canvasState = this.getCanvasState()
         
-        // console.log("Mouse down", this.state, this.toolManager.getCurrentTool())
+        if (canvasState.isMultiSelected && this.handleMultiSelect(coords, canvasState)) {
+            return
+        }
 
         // Priority 1: Check for handle clicks on selected shape (highest priority)
         const selectedShape = canvasState.getSelectedShape()
@@ -209,6 +224,47 @@ export class InteractionManager {
         this.shortcutManager.cleanup()
     }
 
+    private handleMultiSelect(coords: CanvasCoords, canvasState: CanvasState) {
+        const selectedShapes = canvasState.getSelectedShapes()
+        if (selectedShapes.length === 0) return false
+        const minX = Math.min(...selectedShapes.map(s => s.x))
+        const minY = Math.min(...selectedShapes.map(s => s.y))
+        const maxX = Math.max(...selectedShapes.map(s => s.x + s.width))
+        const maxY = Math.max(...selectedShapes.map(s => s.y + s.height))
+        const boxCenterX = minX + (maxX - minX) / 2
+        const boxCenterY = minY + (maxY - minY) / 2
+        // check if clicked a handle of the multi-selection bounding box
+        const handles = getResizehandlesFromCoords(minX, minY, maxX, maxY, this.camera.scale)
+        for (const handle of handles) {
+            if (isPointInHandle(coords, handle, this.camera.scale)) {
+                this.originalShapes = selectedShapes.map(s => ({ ...s }))
+                this.originalBoundingBox = { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+                
+                if (handle.type === 'rotation') {
+                    this.state = CanvasStateEnum.ROTATING_OBJECT
+                    this.resizeHandle = handle
+                    // calculate the starting angle from the center of the bounding box to the cursor
+                    this.initialRotationAngle = Math.atan2(coords.y - boxCenterY, coords.x - boxCenterX) * (180 / Math.PI)
+                    this.callbacks.onStateChange(this.state)
+                } else {
+                    this.state = CanvasStateEnum.RESIZING_OBJECT
+                    this.resizeHandle = handle
+                    this.callbacks.onStateChange(this.state)
+                }
+                return true
+            }
+        }
+        // check if clicked inside the bounding box to move
+        if (coords.x >= minX && coords.x <= maxX && coords.y >= minY && coords.y <= maxY) {
+            this.state = CanvasStateEnum.MOVING_OBJECT
+            this.dragOffset = { x: coords.x, y: coords.y }
+            this.originalShapes = selectedShapes.map(s => ({ ...s }))
+            this.callbacks.onStateChange(this.state)
+            return true
+        }
+        return false
+    }
+
     private handleResizeHandleClick(coords: CanvasCoords, selectedShape: ShapeData): boolean {
         const clickedHandle = getClickedHandle(coords, selectedShape, this.camera.scale)
         if (clickedHandle && clickedHandle.type == "rotation") {
@@ -243,12 +299,25 @@ export class InteractionManager {
 
     private handleShapeSelectionClick(coords: CanvasCoords, canvasState: CanvasState): boolean {
         const shapes = canvasState.getAllShapes()
+        const isShiftPressed = this.shortcutManager.getPressedKey() == "Shift"
         
         // check from top to bottom (reverse z-order)
         for (let i = shapes.length - 1; i >= 0; i--) {
             if (isPointInShape(coords, shapes[i])) {
                 // select the shape
-                this.callbacks.onApplyOperation(CanvasState.selectShape(shapes[i].id), true)
+                if (canvasState.isMultiSelected) {
+                    if (shapes[i].isSelected && !isShiftPressed) {
+                        this.callbacks.onApplyOperation(CanvasState.deselectAll(), true)
+                    } else {
+                        this.callbacks.onApplyOperation(CanvasState.multiSelectShapes(shapes[i].id), true)
+                    }
+                } else {
+                    if (shapes[i].isSelected) {
+                        this.callbacks.onApplyOperation(CanvasState.selectShape(shapes[i].id), true)
+                    } else {
+                        this.callbacks.onApplyOperation(CanvasState.multiSelectShapes(shapes[i].id), true)
+                    }
+                }
                 this.callbacks.onStateChange(this.state)
                 return true
             }
@@ -288,7 +357,21 @@ export class InteractionManager {
     }
 
     private handleMoveObjectMove(coords: CanvasCoords): void {
-        const selectedShape = this.getCanvasState().getSelectedShape()
+        const canvasState = this.getCanvasState()
+        if (canvasState.isMultiSelected && this.dragOffset && this.originalShapes.length > 0) {
+            const dx = coords.x - this.dragOffset.x
+            const dy = coords.y - this.dragOffset.y
+            const updates = this.originalShapes.map(original => ({
+                id: original.id,
+                changes: {
+                    x: original.x + dx,
+                    y: original.y + dy
+                }
+            }))
+            this.callbacks.onApplyOperation(CanvasState.updateShapes(updates), false)
+            return
+        }
+        const selectedShape = canvasState.getSelectedShape()
         if (selectedShape && this.dragOffset) {
             const newX = coords.x - this.dragOffset.x
             const newY = coords.y - this.dragOffset.y
@@ -301,7 +384,48 @@ export class InteractionManager {
     }
 
     private handleResizeObjectMove(coords: CanvasCoords): void {
-        const selectedShape = this.getCanvasState().getSelectedShape()
+        const canvasState = this.getCanvasState()
+        if (canvasState.isMultiSelected && this.resizeHandle && this.originalShapes.length > 0 && this.originalBoundingBox) {
+            const dummyBox: ShapeData = {
+                id: 'dummy',
+                type: 'rectangle',
+                x: this.originalBoundingBox.x,
+                y: this.originalBoundingBox.y,
+                width: this.originalBoundingBox.width,
+                height: this.originalBoundingBox.height,
+                color: '',
+                isSelected: false,
+                zIndex: 0,
+                rotation: 0
+            }
+            
+            const newBoxDimensions = calculateRotatedResize(dummyBox, this.resizeHandle, coords)
+            
+            // fallback to original dimensions if dimension is undefined (for single axis)
+            const boxX = newBoxDimensions.x !== undefined ? newBoxDimensions.x : this.originalBoundingBox.x
+            const boxY = newBoxDimensions.y !== undefined ? newBoxDimensions.y : this.originalBoundingBox.y
+            const boxW = newBoxDimensions.width !== undefined ? newBoxDimensions.width : this.originalBoundingBox.width
+            const boxH = newBoxDimensions.height !== undefined ? newBoxDimensions.height : this.originalBoundingBox.height
+            const sx = boxW / this.originalBoundingBox.width
+            const sy = boxH / this.originalBoundingBox.height
+            const updates = this.originalShapes.map(original => {
+                const relativeX = original.x - this.originalBoundingBox!.x
+                const relativeY = original.y - this.originalBoundingBox!.y
+                return {
+                    id: original.id,
+                    changes: {
+                        x: boxX + relativeX * sx,
+                        y: boxY + relativeY * sy,
+                        width: original.width * sx,
+                        height: original.height * sy
+                    }
+                }
+            })
+            this.callbacks.onApplyOperation(CanvasState.updateShapes(updates), false)
+            return
+        }
+
+        const selectedShape = canvasState.getSelectedShape()
         if (selectedShape && this.resizeHandle && this.originalShape) {
             const newDimensions = calculateRotatedResize(this.originalShape, this.resizeHandle, coords)
             this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, newDimensions), false)
@@ -309,6 +433,39 @@ export class InteractionManager {
     }
 
     private handleShapeRotationMove(coords: CanvasCoords): void {
+        const canvasState = this.getCanvasState()
+        if (canvasState.isMultiSelected && this.originalShapes.length > 0 && this.originalBoundingBox) {
+            const boxCenterX = this.originalBoundingBox.x + this.originalBoundingBox.width / 2
+            const boxCenterY = this.originalBoundingBox.y + this.originalBoundingBox.height / 2
+            
+            const currentAngle = Math.atan2(coords.y - boxCenterY, coords.x - boxCenterX) * (180 / Math.PI)
+            const deltaAngle = currentAngle - this.initialRotationAngle
+            const rad = (deltaAngle * Math.PI) / 180
+            const updates = this.originalShapes.map(original => {
+                const origCenterX = original.x + original.width / 2
+                const origCenterY = original.y + original.height / 2
+                
+                // vector from group center to shape center
+                const dx = origCenterX - boxCenterX
+                const dy = origCenterY - boxCenterY
+                
+                // rotate center coordinate around group center
+                const rotatedCenterX = boxCenterX + dx * Math.cos(rad) - dy * Math.sin(rad)
+                const rotatedCenterY = boxCenterY + dx * Math.sin(rad) + dy * Math.cos(rad)
+                
+                return {
+                    id: original.id,
+                    changes: {
+                        x: rotatedCenterX - original.width / 2,
+                        y: rotatedCenterY - original.height / 2,
+                        rotation: (original.rotation + deltaAngle) % 360
+                    }
+                }
+            })
+            this.callbacks.onApplyOperation(CanvasState.updateShapes(updates), false)
+            return
+        }
+
         const selectedShape = this.getCanvasState().getSelectedShape()
         if (selectedShape && this.resizeHandle && this.originalShape) {
             const center = {
@@ -346,7 +503,21 @@ export class InteractionManager {
     }
 
     private finishMoveShape(coords: CanvasCoords): void {
-        const selectedShape = this.getCanvasState().getSelectedShape()
+        const canvasState = this.getCanvasState()
+        if (canvasState.isMultiSelected && this.dragOffset && this.originalShapes.length > 0) {
+            const dx = coords.x - this.dragOffset.x
+            const dy = coords.y - this.dragOffset.y
+            const updates = this.originalShapes.map(original => ({
+                id: original.id,
+                changes: {
+                    x: original.x + dx,
+                    y: original.y + dy
+                }
+            }))
+            this.callbacks.onApplyOperation(CanvasState.updateShapes(updates), true)
+            return
+        }
+        const selectedShape = canvasState.getSelectedShape()
         if (selectedShape && this.dragOffset) {
             const newX = coords.x - this.dragOffset.x
             const newY = coords.y - this.dragOffset.y
@@ -359,7 +530,50 @@ export class InteractionManager {
     }
 
     private finishResizeShape(coords: CanvasCoords): void {
-        const selectedShape = this.getCanvasState().getSelectedShape()
+        const canvasState = this.getCanvasState()
+        if (canvasState.isMultiSelected && this.resizeHandle && this.originalShapes.length > 0 && this.originalBoundingBox) {
+            const dummyBox: ShapeData = {
+                id: 'dummy',
+                type: 'rectangle',
+                x: this.originalBoundingBox.x,
+                y: this.originalBoundingBox.y,
+                width: this.originalBoundingBox.width,
+                height: this.originalBoundingBox.height,
+                color: '',
+                isSelected: false,
+                zIndex: 0,
+                rotation: 0
+            }
+            
+            const newBoxDimensions = calculateRotatedResize(dummyBox, this.resizeHandle, coords)
+            
+            // fallback to original dimensions if dimension is undefined (for single axis)
+            const boxX = newBoxDimensions.x !== undefined ? newBoxDimensions.x : this.originalBoundingBox.x
+            const boxY = newBoxDimensions.y !== undefined ? newBoxDimensions.y : this.originalBoundingBox.y
+            const boxW = newBoxDimensions.width !== undefined ? newBoxDimensions.width : this.originalBoundingBox.width
+            const boxH = newBoxDimensions.height !== undefined ? newBoxDimensions.height : this.originalBoundingBox.height
+            
+            const sx = boxW / this.originalBoundingBox.width
+            const sy = boxH / this.originalBoundingBox.height
+            
+            const updates = this.originalShapes.map(original => {
+                const relativeX = original.x - this.originalBoundingBox!.x
+                const relativeY = original.y - this.originalBoundingBox!.y
+                return {
+                    id: original.id,
+                    changes: {
+                        x: boxX + relativeX * sx,
+                        y: boxY + relativeY * sy,
+                        width: original.width * sx,
+                        height: original.height * sy
+                    }
+                }
+            })
+            this.callbacks.onApplyOperation(CanvasState.updateShapes(updates), true)
+            return
+        }
+
+        const selectedShape = canvasState.getSelectedShape()
         if (selectedShape && this.resizeHandle && this.originalShape) {
             const newDimensions = calculateRotatedResize(this.originalShape, this.resizeHandle, coords)
             this.callbacks.onApplyOperation(CanvasState.updateShape(selectedShape.id, newDimensions), true, this.originalShape ?? undefined)
@@ -367,6 +581,38 @@ export class InteractionManager {
     }
 
     private finishRotateShape(coords: CanvasCoords): void {
+        const canvasState = this.getCanvasState()
+        
+        if (canvasState.isMultiSelected && this.originalShapes.length > 0 && this.originalBoundingBox) {
+            const boxCenterX = this.originalBoundingBox.x + this.originalBoundingBox.width / 2
+            const boxCenterY = this.originalBoundingBox.y + this.originalBoundingBox.height / 2
+            
+            const currentAngle = Math.atan2(coords.y - boxCenterY, coords.x - boxCenterX) * (180 / Math.PI)
+            const deltaAngle = currentAngle - this.initialRotationAngle
+            const rad = (deltaAngle * Math.PI) / 180
+            const updates = this.originalShapes.map(original => {
+                const origCenterX = original.x + original.width / 2
+                const origCenterY = original.y + original.height / 2
+                
+                const dx = origCenterX - boxCenterX
+                const dy = origCenterY - boxCenterY
+                
+                const rotatedCenterX = boxCenterX + dx * Math.cos(rad) - dy * Math.sin(rad)
+                const rotatedCenterY = boxCenterY + dx * Math.sin(rad) + dy * Math.cos(rad)
+                
+                return {
+                    id: original.id,
+                    changes: {
+                        x: rotatedCenterX - original.width / 2,
+                        y: rotatedCenterY - original.height / 2,
+                        rotation: (original.rotation + deltaAngle) % 360
+                    }
+                }
+            })
+            this.callbacks.onApplyOperation(CanvasState.updateShapes(updates), true)
+            return
+        }
+
         const selectedShape = this.getCanvasState().getSelectedShape()
         if (selectedShape && this.resizeHandle && this.originalShape) {
             const center = {
@@ -396,6 +642,9 @@ export class InteractionManager {
         this.startPoint = null
         this.tempShape = null
         this.originalShape = null
+        this.originalShapes = []
+        this.originalBoundingBox = null
+        this.initialRotationAngle = 0
         
         this.toolManager.clearTool()
         this.callbacks.onStateChange(this.state)

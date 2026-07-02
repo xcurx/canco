@@ -1,5 +1,5 @@
 import { wrapText } from './utils'
-import { getResizeHandles } from './selection'
+import { getResizeHandles, getResizehandlesFromCoords } from './selection'
 import {
     CircleData,
     HANDLE_SIZE,
@@ -146,5 +146,35 @@ export function drawSelectionCage(ctx: CanvasRenderingContext2D, shape: ShapeDat
         ctx.fill()
     })
 
+    ctx.restore()
+}
+
+export function drawMultiSelectionCage(ctx: CanvasRenderingContext2D, shapes: ShapeData[]): void {
+    ctx.save();
+    const transform = ctx.getTransform()
+    const scale = Math.sqrt(transform.a * transform.a + transform.b * transform.b)
+    const minX = Math.min(...shapes.map(s => s.x))
+    const minY = Math.min(...shapes.map(s => s.y))
+    const maxX = Math.max(...shapes.map(s => s.x + s.width))
+    const maxY = Math.max(...shapes.map(s => s.y + s.height))
+    const handles = getResizehandlesFromCoords(minX, minY, maxX, maxY, scale)
+
+    const padding = SELECTION_PADDING / scale;
+    ctx.setLineDash([5 / scale, 5 / scale])
+    ctx.strokeStyle = "#007acc"
+    ctx.lineWidth = 1 / scale
+    ctx.strokeRect(
+        minX - padding,
+        minY - padding,
+        (maxX - minX) + padding * 2,
+        (maxY - minY) + padding * 2
+    )
+    
+    handles.forEach(handle => {
+        ctx.beginPath()
+        ctx.arc(handle.x, handle.y, HANDLE_SIZE / scale, 0, 2 * Math.PI)
+        ctx.fillStyle = '#007acc'
+        ctx.fill()
+    })
     ctx.restore()
 }

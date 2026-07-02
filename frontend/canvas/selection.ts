@@ -32,6 +32,23 @@ export function getResizeHandles(shape: ShapeData, scale: number = 1): Array<{x:
     ]
 }
 
+export function getResizehandlesFromCoords(minX: number, minY: number, maxX: number, maxY: number, scale: number = 1): Array<{x: number, y: number, type: string}> {
+    const padding = SELECTION_PADDING / scale
+     
+    return [
+        { x: minX - padding, y: minY - padding, type: 'top-left' },
+        { x: minX + (maxX - minX) / 2, y: minY - padding, type: 'top-middle' },
+        { x: maxX + padding, y: minY - padding, type: 'top-right' },
+        { x: minX - padding, y: minY + (maxY - minY) / 2, type: 'middle-left' },
+        { x: maxX + padding, y: minY + (maxY - minY) / 2, type: 'middle-right' },
+        { x: minX - padding, y: maxY + padding, type: 'bottom-left' },
+        { x: minX + (maxX - minX) / 2, y: maxY + padding, type: 'bottom-middle' },
+        { x: maxX + padding, y: maxY + padding, type: 'bottom-right' },
+        // 30px above for rotation
+        { x: minX + (maxX - minX) / 2, y: minY - 30 / scale, type: 'rotation' },
+    ]
+}
+
 export function isPointInShape(coords: CanvasCoords, shape: ShapeData): boolean {
     coords = unrotateCoords(coords, shape)
     switch (shape.type) {
