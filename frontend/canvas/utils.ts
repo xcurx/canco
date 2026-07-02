@@ -1,6 +1,8 @@
 import { unrotateCoords } from './selection'
 import { CanvasCoords, ShapeData } from './type'
 
+export interface BoundingBox { x: number; y: number; width: number; height: number }
+
 export function calculateResize(
     shape: ShapeData, 
     handle: {type: string}, 
@@ -216,4 +218,86 @@ export function wrapText(
     })
 
     return lines
+}
+
+export function getShapesBoundingBox(shapes: ShapeData[]): BoundingBox | null {
+    if (shapes.length === 0) return null
+    const minX = Math.min(...shapes.map(s => s.x))
+    const minY = Math.min(...shapes.map(s => s.y))
+    const maxX = Math.max(...shapes.map(s => s.x + s.width))
+    const maxY = Math.max(...shapes.map(s => s.y + s.height))
+    return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+}
+
+export function getMultiResizeUpdates(
+    originalShapes: ShapeData[],
+    originalBoundingBox: BoundingBox,
+    handle: { type: string },
+    coords: CanvasCoords
+): Array<{ id: string, changes: Partial<ShapeData> }> {
+    const dummyBox: ShapeData = {
+        id: 'dummy',
+        type: 'rectangle',
+        x: originalBoundingBox.x,
+        y: originalBoundingBox.y,
+        width: originalBoundingBox.width,
+        height: originalBoundingBox.height,
+        color: '', isSelected: false, zIndex: 0, rotation: 0
+    }
+    const newBoxDimensions = calculateRotatedResize(dummyBox, handle, coords)
+    
+    const boxX = newBoxDimensions.x !== undefined ? newBoxDimensions.x : originalBoundingBox.x
+    const boxY = newBoxDimensions.y !== undefined ? newBoxDimensions.y : originalBoundingBox.y
+    const boxW = newBoxDimensions.width !== undefined ? newBoxDimensions.width : originalBoundingBox.width
+    const boxH = newBoxDimensions.height !== undefined ? newBoxDimensions.height : originalBoundingBox.height
+    
+    const sx = boxW / originalBoundingBox.width
+    const sy = boxH / originalBoundingBox.height
+    
+    return originalShapes.map(original => {
+        const relativeX = original.x - originalBoundingBox.x
+        const relativeY = original.y - originalBoundingBox.y
+        return {
+            id: original.id,
+            changes: {
+                x: boxX + relativeX * sx,
+                y: boxY + relativeY * sy,
+                width: original.width * sx,
+                height: original.height * sy
+            }
+        }
+    })
+}
+
+export function getMultiRotationUpdates(
+    originalShapes: ShapeData[],
+    originalBoundingBox: BoundingBox,
+    initialRotationAngle: number,
+    coords: CanvasCoords
+): Array<{ id: string, changes: Partial<ShapeData> }> {
+    const boxCenterX = originalBoundingBox.x + originalBoundingBox.width / 2
+    const boxCenterY = originalBoundingBox.y + originalBoundingBox.height / 2
+    
+    const currentAngle = Math.atan2(coords.y - boxCenterY, coords.x - boxCenterX) * (180 / Math.PI)
+    const deltaAngle = currentAngle - initialRotationAngle
+    const rad = (deltaAngle * Math.PI) / 180
+
+    return originalShapes.map(original => {
+        const origCenterX = original.x + original.width / 2
+        const origCenterY = original.y + original.height / 2
+        const dx = origCenterX - boxCenterX
+        const dy = origCenterY - boxCenterY
+        
+        const rotatedCenterX = boxCenterX + dx * Math.cos(rad) - dy * Math.sin(rad)
+        const rotatedCenterY = boxCenterY + dx * Math.sin(rad) + dy * Math.cos(rad)
+        
+        return {
+            id: original.id,
+            changes: {
+                x: rotatedCenterX - original.width / 2,
+                y: rotatedCenterY - original.height / 2,
+                rotation: (original.rotation + deltaAngle) % 360
+            }
+        }
+    })
 }
