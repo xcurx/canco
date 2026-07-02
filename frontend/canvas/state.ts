@@ -32,137 +32,76 @@ export class CanvasState {
 
     static applyOperation(currentState: CanvasState, operation: Operation): CanvasState {
         const newShapes = new Map(currentState.shapes)
-        let newSelectId = currentState.selectedShapeId
-        let isMultiSelected = currentState.isMultiSelected
-        let selectedShapeIds: string[] = currentState.selectedShapeIds
-
         if (!operation) return currentState
+
         console.log("Applying operation in CanvasState:", operation)
 
         switch (operation.type) {
             case 'CREATE_SHAPE': {
-                const createOp = operation as CreateShapeOperation
-                newShapes.set(createOp.data.shape.id, createOp.data.shape)
-                if (createOp.data.shape.isSelected) {
-                    newSelectId = createOp.data.shape.id
-                }
+                const op = operation as CreateShapeOperation
+                newShapes.set(op.data.shape.id, op.data.shape)
                 break
             }
-
             case 'UPDATE_SHAPE': {
-                const updateOp = operation as UpdateShapeOperation
-                const existingShape = newShapes.get(updateOp.data.id)
-                if (existingShape) {
-                    const updatedShape = { ...existingShape, ...updateOp.data.changes } as ShapeData
-                    newShapes.set(updateOp.data.id, updatedShape)
-                    if (updatedShape.isSelected) {
-                        newSelectId = updateOp.data.id
-                    } else if (newSelectId === updateOp.data.id) {
-                        newSelectId = null
-                    }
-                }
+                const op = operation as UpdateShapeOperation
+                const existing = newShapes.get(op.data.id)
+                if (existing) newShapes.set(op.data.id, { ...existing, ...op.data.changes } as ShapeData)
                 break
             }
-
             case 'DELETE_SHAPE': {
-                const deleteOp = operation as DeleteShapeOperation
-                newShapes.delete(deleteOp.data.id)
-                if (newSelectId === deleteOp.data.id) {
-                    newSelectId = null
-                }
+                const op = operation as DeleteShapeOperation
+                newShapes.delete(op.data.id)
                 break
             }
-
             case 'SELECT_SHAPE': {
-                const selectOp = operation as SelectShapeOperation
-                
+                const op = operation as SelectShapeOperation
                 newShapes.forEach((shape, id) => {
-                    if (shape.isSelected) {
-                        newShapes.set(id, { ...shape, isSelected: false })
-                    }
+                    if (shape.isSelected) newShapes.set(id, { ...shape, isSelected: false })
                 })
-
-                const targetShape = newShapes.get(selectOp.data.id)
-                if (targetShape) {
-                    newShapes.set(selectOp.data.id, { ...targetShape, isSelected: true })
-                    newSelectId = selectOp.data.id
-                }
-                isMultiSelected = false
-                selectedShapeIds = []
+                const target = newShapes.get(op.data.id)
+                if (target) newShapes.set(op.data.id, { ...target, isSelected: true })
                 break
             }
-
             case 'MULTISELECT_SHAPES': {
-                const multiSelectOp = operation as MultiSelectOperation
-                const targetShape = newShapes.get(multiSelectOp.data.id)
-                if (targetShape) {
-                    const isCurrentlySelected = targetShape.isSelected
-                    newShapes.set(multiSelectOp.data.id, { ...targetShape, isSelected: !isCurrentlySelected })
-                    
-                    // update selectedShapeIds list
-                    if (isCurrentlySelected) {
-                        selectedShapeIds = selectedShapeIds.filter(id => id !== targetShape.id)
-                    } else {
-                        selectedShapeIds.push(targetShape.id)
-                    }
-                    
-                    isMultiSelected = selectedShapeIds.length > 1
-                    newSelectId = selectedShapeIds.length === 1 ? selectedShapeIds[0] : null
-                }
+                const op = operation as MultiSelectOperation
+                const target = newShapes.get(op.data.id)
+                if (target) newShapes.set(op.data.id, { ...target, isSelected: !target.isSelected })
                 break
             }
-
             case 'DESELECT_ALL': {
                 newShapes.forEach((shape, id) => {
-                    if (shape.isSelected) {
-                        newShapes.set(id, { ...shape, isSelected: false })
-                    }
+                    if (shape.isSelected) newShapes.set(id, { ...shape, isSelected: false })
                 })
-                isMultiSelected = false
-                selectedShapeIds = []
-                newSelectId = null
                 break
             }
-
             case 'UPDATE_SHAPES': {
-                const updateOp = operation as UpdateShapesOperation
-                updateOp.data.updates.forEach(({ id, changes }) => {
-                    const existingShape = newShapes.get(id)
-                    if (existingShape) {
-                        newShapes.set(id, { ...existingShape, ...changes } as ShapeData)
-                    }
+                const op = operation as UpdateShapesOperation
+                op.data.updates.forEach(({ id, changes }) => {
+                    const existing = newShapes.get(id)
+                    if (existing) newShapes.set(id, { ...existing, ...changes } as ShapeData)
                 })
                 break
             }
-
             case 'CREATE_SHAPES': {
-                const createOp = operation as CreateShapesOperation
-                createOp.data.shapes.forEach(shape => {
-                    newShapes.set(shape.id, shape)
-                })
+                const op = operation as CreateShapesOperation
+                op.data.shapes.forEach(shape => newShapes.set(shape.id, shape))
                 break
             }
-
             case 'DELETE_SHAPES': {
-                const deleteOp = operation as DeleteShapesOperation
-                deleteOp.data.ids.forEach(id => {
-                    newShapes.delete(id)
-                })
-                isMultiSelected = false
-                selectedShapeIds = []
-                newSelectId = null
+                const op = operation as DeleteShapesOperation
+                op.data.ids.forEach(id => newShapes.delete(id))
                 break
             }
-
             default:
                 throw new Error(`Unknown operation type: ${operation.type}`)
         }
 
         const newState = new CanvasState([])
         newState.shapes = newShapes
-        newState.selectedShapeId = newSelectId
-        newState.isMultiSelected = isMultiSelected
-        newState.selectedShapeIds = selectedShapeIds
+        const selectedShapes = Array.from(newShapes.values()).filter(s => s.isSelected)
+        newState.selectedShapeIds = selectedShapes.map(s => s.id)
+        newState.isMultiSelected = selectedShapes.length > 1
+        newState.selectedShapeId = selectedShapes.length === 1 ? selectedShapes[0].id : null
         return newState
     }
 
