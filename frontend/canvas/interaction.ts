@@ -11,6 +11,7 @@ import { ResizeHandler } from './handlers/resizeHandler'
 import { RotateHandler } from './handlers/rotateHandler'
 import { CreateHandler } from './handlers/createHandler'
 import { PanHandler } from './handlers/panHandler'
+import { SelectHandler } from './handlers/selectHandler'
 
 export type InteractionCallbacks = {
     onStateChange: (state: CanvasStateEnum) => void
@@ -138,10 +139,10 @@ export class InteractionManager implements InteractionContext {
 
         // empty space click
         this.applyOperation(CanvasState.deselectAll(), true)
-        if (this.toolManager.hasActiveTool()) {
-            this.activeHandler = new CreateHandler(this, coords)
+        if (!this.toolManager.hasActiveTool()) {
+            this.activeHandler = new SelectHandler(this, coords)
         } else {
-            this.changeState(CanvasStateEnum.IDLE)
+            this.activeHandler = new CreateHandler(this, coords)
         }
     }
 

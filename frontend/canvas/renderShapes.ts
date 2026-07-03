@@ -35,10 +35,6 @@ export function renderRectangle(ctx: CanvasRenderingContext2D, shape: RectangleD
 
     ctx.strokeStyle = shape.color
     ctx.stroke()
-
-    if (shape.isSelected) {
-        drawSelectionCage(ctx, shape)
-    }
 }
 
 export function renderCircle(ctx: CanvasRenderingContext2D, shape: CircleData): void {
@@ -59,13 +55,9 @@ export function renderCircle(ctx: CanvasRenderingContext2D, shape: CircleData): 
     )
     ctx.strokeStyle = shape.color
     ctx.stroke()
-
-    if (shape.isSelected) {
-        drawSelectionCage(ctx, shape)
-    }
 }
 
-export function renderShape(ctx: CanvasRenderingContext2D, shape: ShapeData): void {
+export function renderShape(ctx: CanvasRenderingContext2D, shape: ShapeData, showCage: boolean = true, showHandles: boolean = true): void {
     ctx.save()
     // move origin to center of shape
     const centerX = shape.x + shape.width / 2
@@ -114,17 +106,21 @@ export function renderText(ctx: CanvasRenderingContext2D, shape: TextData): void
         ctx.fillText(line, shape.x, shape.y + yOffset)
         yOffset += shape.fontSize * 1.2
     })
-
-    if (shape.isSelected) {
-        drawSelectionCage(ctx, shape)
-    }
 }
 
-export function drawSelectionCage(ctx: CanvasRenderingContext2D, shape: ShapeData): void {
+export function drawSelectionCage(ctx: CanvasRenderingContext2D, shape: ShapeData, showHandles: boolean = true): void {
     ctx.save()
+    
+    if (shape.rotation && shape.type !== 'line') {
+        const centerX = shape.x + shape.width / 2
+        const centerY = shape.y + shape.height / 2
+        ctx.translate(centerX, centerY)
+        ctx.rotate(shape.rotation * Math.PI / 180)
+        ctx.translate(-centerX, -centerY)
+    }
+
     const transform = ctx.getTransform()
     const scale = Math.sqrt(transform.a * transform.a + transform.b * transform.b)
-    const handles = getResizeHandles(shape, scale)
 
     if (shape.type !== 'line') {
         const padding = SELECTION_PADDING / scale;
@@ -139,12 +135,15 @@ export function drawSelectionCage(ctx: CanvasRenderingContext2D, shape: ShapeDat
         )
     }
 
-    handles.forEach(handle => {
-        ctx.beginPath()
-        ctx.arc(handle.x, handle.y, HANDLE_SIZE / scale, 0, 2 * Math.PI)
-        ctx.fillStyle = '#007acc'
-        ctx.fill()
-    })
+    if (showHandles) {
+        const handles = getResizeHandles(shape, scale)
+        handles.forEach(handle => {
+            ctx.beginPath()
+            ctx.arc(handle.x, handle.y, HANDLE_SIZE / scale, 0, 2 * Math.PI)
+            ctx.fillStyle = '#007acc'
+            ctx.fill()
+        })
+    }
 
     ctx.restore()
 }

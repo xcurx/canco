@@ -1,6 +1,6 @@
 import { ShapeData, CanvasState as CanvasStateEnum, Operation } from './type'
 import { CanvasState } from './state'
-import { drawMultiSelectionCage, renderShape } from './renderShapes'
+import { drawMultiSelectionCage, drawSelectionCage, renderShape } from './renderShapes'
 import { HistoryCallbacks, HistoryManager } from './history'
 import { ToolManager, ToolManagerCallbacks } from './tools'
 import { InteractionManager, InteractionCallbacks } from './interaction'
@@ -206,19 +206,32 @@ export class Renderer {
         )
         
         const shapes = this.canvasState.getAllShapes()
-        shapes.forEach(shape => {
+        for (const shape of shapes) {
             if (shape.id !== this.editingShapeId) {
                 renderShape(this.ctx, shape)
             }
-        })
-
+        }
         if (this.canvasState.isMultiSelected) {
-            const shapes = this.canvasState.getSelectedShapes()
-            drawMultiSelectionCage(this.ctx, shapes)
+            const selectedShapes = this.canvasState.getSelectedShapes()
+            
+            for (const shape of selectedShapes) {
+                drawSelectionCage(this.ctx, shape, false) // false = hide handles
+            }
+            drawMultiSelectionCage(this.ctx, selectedShapes)
+            
+        } else {
+            const selectedShape = this.canvasState.getSelectedShape()
+            if (selectedShape) {
+                drawSelectionCage(this.ctx, selectedShape, true)
+            }
         }
         
         if (this.tempShape) {
-            renderShape(this.ctx, this.tempShape)
+            if (this.currentInteractionState === CanvasStateEnum.SELECTING_MULTIPLE) {
+                renderShape(this.ctx, this.tempShape, false)
+            } else {
+                renderShape(this.ctx, this.tempShape)
+            }
         }
 
         this.ctx.restore()
