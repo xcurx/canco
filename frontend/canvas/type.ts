@@ -17,10 +17,12 @@ export interface LineData extends BaseShapeData {
 
 export interface RectangleData extends BaseShapeData {
     type: 'rectangle'
+    fillColor?: string
 }
 
 export interface CircleData extends BaseShapeData {
     type: 'circle'
+    fillColor?: string
 }
 
 export interface TextData extends BaseShapeData {

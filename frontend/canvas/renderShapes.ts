@@ -33,6 +33,11 @@ export function renderRectangle(ctx: CanvasRenderingContext2D, shape: RectangleD
         shape.height
     )
 
+    if (shape.fillColor) {
+        ctx.fillStyle = shape.fillColor
+        ctx.fill()
+    }
+
     ctx.strokeStyle = shape.color
     ctx.stroke()
 }

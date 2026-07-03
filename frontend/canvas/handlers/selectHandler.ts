@@ -7,7 +7,7 @@ export class SelectHandler implements InteractionHandler {
     
     constructor(private context: InteractionContext, private startPoint: CanvasCoords) {
         // temp seletion box
-        this.tempShape = createRectangleData(startPoint.x, startPoint.y, 0, 0, "rgba(0, 122, 204, 0.3)")
+        this.tempShape = createRectangleData(startPoint.x, startPoint.y, 0, 0, "rgba(0, 122, 204, 0.6)", 0, "rgba(0, 122, 204, 0.1)")
         
         this.context.changeState(CanvasStateEnum.SELECTING_MULTIPLE)
         this.context.updateTempShape(this.tempShape)

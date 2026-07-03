@@ -226,7 +226,7 @@ export function createLineData(x1: number, y1: number, x2: number, y2: number, c
     }
 }
 
-export function createRectangleData(x: number, y: number, width: number, height: number, color: string, r: number = 0): RectangleData {
+export function createRectangleData(x: number, y: number, width: number, height: number, color: string, r: number = 0, fillColor?: string): RectangleData {
     return {
         id: crypto.randomUUID(),
         type: 'rectangle',
@@ -237,7 +237,8 @@ export function createRectangleData(x: number, y: number, width: number, height:
         color,
         isSelected: true,
         zIndex: Date.now(),
-        rotation: r
+        rotation: r,
+        fillColor
     }
 }
 
