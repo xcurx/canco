@@ -55,6 +55,21 @@ func (h *EventHandler) HandleOperation(data interface{}, room *types.Room, userI
 		log.Printf("Shape selected: %+v", op.Data)
 		// room.BroadcastEvent("SELECT_SHAPE", op.Data)
 
+	case types.MultiSelectShapes:
+		room.Mutex.Lock()
+		room.Mutex.Unlock()
+		log.Printf("Shapes multiselected: %+v", op.Data)
+		// room.BroadcastEvent("MULTISELECT_SHAPES", op.Data)
+
+	case types.CreateShapes:
+		createShapes(op, room, userID, h.db, h.isPersistent)
+
+	case types.UpdateShapes:
+		updateShapes(op, room, userID, h.db, h.isPersistent)
+
+	case types.DeleteShapes:
+		deleteShapes(op, room, userID, h.db, h.isPersistent)
+
 	case types.DeselectAll:
 		room.Mutex.Lock()
 		room.Mutex.Unlock()
@@ -69,7 +84,7 @@ func (h *EventHandler) HandleOperation(data interface{}, room *types.Room, userI
 	room.RoomState.History = append(room.RoomState.History, op)
 	historyIndex := len(room.RoomState.History) - 1
 
-	if op.Type != types.SelectShape && op.Type != types.DeselectAll {
+	if op.Type != types.SelectShape && op.Type != types.DeselectAll && op.Type != types.MultiSelectShapes {
 		for i, user := range room.Users {
 			if user.ID == userID {
 				room.Users[i].UserState.UndoStack = append(room.Users[i].UserState.UndoStack, historyIndex)
