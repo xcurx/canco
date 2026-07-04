@@ -1,6 +1,7 @@
 import { InteractionContext, InteractionHandler } from './interactionHandler'
 import { CanvasCoords, CanvasState as CanvasStateEnum, ShapeData } from '../type'
 import { CanvasState, createRectangleData } from '../state'
+import { getRotatedCorners } from '../utils'
 
 export class SelectHandler implements InteractionHandler {
     private tempShape: ShapeData | null = null
@@ -41,18 +42,23 @@ export class SelectHandler implements InteractionHandler {
         const shapes = canvasState.getAllShapes()
         const boxRight = this.tempShape.x + this.tempShape.width
         const boxBottom = this.tempShape.y + this.tempShape.height
+        const isTooSmall = Math.abs(this.tempShape.width) < 3 && Math.abs(this.tempShape.height) < 3
         
         const updates = shapes.map(s => {
-            const minX = Math.min(s.x, s.x + s.width)
-            const maxX = Math.max(s.x, s.x + s.width)
-            const minY = Math.min(s.y, s.y + s.height)
-            const maxY = Math.max(s.y, s.y + s.height)
+            const corners = getRotatedCorners(s);
             
-            const isInside = 
-                minX < boxRight &&
-                maxX > this.tempShape!.x &&
-                minY < boxBottom &&
-                maxY > this.tempShape!.y
+            // to calculate intersection with the tempShape which can have negative width/height
+            const tempMinX = Math.min(this.tempShape!.x, boxRight)
+            const tempMaxX = Math.max(this.tempShape!.x, boxRight)
+            const tempMinY = Math.min(this.tempShape!.y, boxBottom)
+            const tempMaxY = Math.max(this.tempShape!.y, boxBottom)
+
+            const isInside = !isTooSmall && corners.every(c => 
+                c.x >= tempMinX && 
+                c.x <= tempMaxX && 
+                c.y >= tempMinY && 
+                c.y <= tempMaxY
+            );
                 
             return {
                 id: s.id,
