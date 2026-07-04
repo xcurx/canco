@@ -17,7 +17,7 @@ export interface InteractionContext {
 
 // every tool must implement this
 export interface InteractionHandler {
-    onMouseMove(coords: CanvasCoords, e: MouseEvent): void
-    onMouseUp(coords: CanvasCoords, e: MouseEvent): void
+    onMouseMove(coords: CanvasCoords, e: PointerEvent): void
+    onMouseUp(coords: CanvasCoords, e: PointerEvent): void
     cleanup?(): void
 }

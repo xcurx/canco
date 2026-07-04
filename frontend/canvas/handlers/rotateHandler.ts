@@ -29,11 +29,11 @@ export class RotateHandler implements InteractionHandler {
         this.context.changeState(CanvasStateEnum.ROTATING_OBJECT)
     }
 
-    onMouseMove(coords: CanvasCoords, e: MouseEvent): void {
+    onMouseMove(coords: CanvasCoords, e: PointerEvent): void {
         this.applyRotation(coords, false)
     }
 
-    onMouseUp(coords: CanvasCoords, e: MouseEvent): void {
+    onMouseUp(coords: CanvasCoords, e: PointerEvent): void {
         this.applyRotation(coords, true)
     }
 

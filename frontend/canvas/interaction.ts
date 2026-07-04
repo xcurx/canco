@@ -72,8 +72,9 @@ export class InteractionManager implements InteractionContext {
         })
     }
 
-    handleMouseDown(coords: CanvasCoords, e: MouseEvent): void {
-        if (e.button === 2) { e.preventDefault(); return }
+    handleMouseDown(coords: CanvasCoords, e: PointerEvent): void {
+        e.preventDefault()
+        if (e.button === 2) return
         
         // panning priority
         if (this.toolManager.getCurrentTool() === 'pan' || e.button === 1 || this.state === CanvasStateEnum.PANNING) {
@@ -146,11 +147,13 @@ export class InteractionManager implements InteractionContext {
         }
     }
 
-    handleMouseMove(coords: CanvasCoords, e: MouseEvent): void {
+    handleMouseMove(coords: CanvasCoords, e: PointerEvent): void {
+        e.preventDefault()
         if (this.activeHandler) this.activeHandler.onMouseMove(coords, e)
     }
 
-    handleMouseUp(coords: CanvasCoords, e: MouseEvent): void {
+    handleMouseUp(coords: CanvasCoords, e: PointerEvent): void {
+        e.preventDefault()
         if (this.activeHandler) {
             this.activeHandler.onMouseUp(coords, e)
             if (this.activeHandler.cleanup) this.activeHandler.cleanup()
@@ -181,25 +184,25 @@ export class InteractionManager implements InteractionContext {
     getState(): CanvasStateEnum { return this.state }
     
     cleanup(): void {
-        this.canvas.removeEventListener("mousedown", this.onMouseDown)
-        this.canvas.removeEventListener("mousemove", this.onMouseMove)
-        this.canvas.removeEventListener("mouseup", this.onMouseUp)
+        this.canvas.removeEventListener("pointerdown", this.onPointerDown)
+        this.canvas.removeEventListener("pointermove", this.onPointerMove)
+        this.canvas.removeEventListener("pointerup", this.onPointerUp)
         this.canvas.removeEventListener("wheel", this.onWheel)
         this.canvas.removeEventListener("dblclick", this.onDoubleClick)
         this.shortcutManager.cleanup()
     }
 
     private addEventListeners(): void {
-        this.canvas.addEventListener("mousedown", this.onMouseDown)
-        this.canvas.addEventListener("mousemove", this.onMouseMove)
-        this.canvas.addEventListener("mouseup", this.onMouseUp)
+        this.canvas.addEventListener("pointerdown", this.onPointerDown)
+        this.canvas.addEventListener("pointermove", this.onPointerMove)
+        this.canvas.addEventListener("pointerup", this.onPointerUp)
         this.canvas.addEventListener("wheel", this.onWheel, { passive: false })
         this.canvas.addEventListener("dblclick", this.onDoubleClick)
     }
 
-    private onMouseDown = (e: MouseEvent) => this.handleMouseDown(this.getCanvasCoordinates(e), e)
-    private onMouseMove = (e: MouseEvent) => this.handleMouseMove(this.getCanvasCoordinates(e), e)
-    private onMouseUp = (e: MouseEvent) => this.handleMouseUp(this.getCanvasCoordinates(e), e)
+    private onPointerDown = (e: PointerEvent) => this.handleMouseDown(this.getCanvasCoordinates(e), e)
+    private onPointerMove = (e: PointerEvent) => this.handleMouseMove(this.getCanvasCoordinates(e), e)
+    private onPointerUp = (e: PointerEvent) => this.handleMouseUp(this.getCanvasCoordinates(e), e)
     private onWheel = (e: WheelEvent) => this.handleWheel(e)
     
     private onDoubleClick = (e: MouseEvent) => {
@@ -214,7 +217,7 @@ export class InteractionManager implements InteractionContext {
         }
     }
 
-    private getCanvasCoordinates(e: MouseEvent): CanvasCoords {
+    private getCanvasCoordinates(e: PointerEvent | MouseEvent): CanvasCoords {
         const rect = this.canvas.getBoundingClientRect()
         return this.camera.screenToWorld(e.clientX - rect.left, e.clientY - rect.top)
     }

@@ -14,7 +14,7 @@ export class SelectHandler implements InteractionHandler {
         this.context.updateTempShape(this.tempShape)
     }
 
-    onMouseMove(coords: CanvasCoords, e: MouseEvent): void {
+    onMouseMove(coords: CanvasCoords, e: PointerEvent): void {
         if (this.tempShape) {
             this.tempShape = this.context.toolManager.updateTempShape(this.tempShape, this.startPoint, coords)
             this.context.updateTempShape(this.tempShape)
@@ -25,7 +25,7 @@ export class SelectHandler implements InteractionHandler {
         }
     }
 
-    onMouseUp(coords: CanvasCoords, e: MouseEvent): void {
+    onMouseUp(coords: CanvasCoords, e: PointerEvent): void {
         if (this.tempShape) {
             const updates = this.applySelection()
             this.context.applyOperation(CanvasState.updateShapes(updates), true)

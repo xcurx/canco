@@ -13,14 +13,14 @@ export class CreateHandler implements InteractionHandler {
         }
     }
 
-    onMouseMove(coords: CanvasCoords, e: MouseEvent): void {
+    onMouseMove(coords: CanvasCoords, e: PointerEvent): void {
         if (this.tempShape) {
             this.tempShape = this.context.toolManager.updateTempShape(this.tempShape, this.startPoint, coords)
             this.context.updateTempShape(this.tempShape)
         }
     }
 
-    onMouseUp(coords: CanvasCoords, e: MouseEvent): void {
+    onMouseUp(coords: CanvasCoords, e: PointerEvent): void {
         if (this.tempShape && this.context.toolManager.isShapeViable(this.tempShape)) {
             this.context.applyOperation(CanvasState.createShape(this.tempShape), true)
             if (this.tempShape.type === 'text') {

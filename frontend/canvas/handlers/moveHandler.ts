@@ -22,11 +22,11 @@ export class MoveHandler implements InteractionHandler {
         this.context.changeState(CanvasStateEnum.MOVING_OBJECT)
     }
 
-    onMouseMove(coords: CanvasCoords, e: MouseEvent): void {
+    onMouseMove(coords: CanvasCoords, e: PointerEvent): void {
         this.applyMove(coords, false)
     }
 
-    onMouseUp(coords: CanvasCoords, e: MouseEvent): void {
+    onMouseUp(coords: CanvasCoords, e: PointerEvent): void {
         this.applyMove(coords, true)
     }
 
