@@ -91,10 +91,14 @@ export class Renderer {
             console.log("Saving to history", operation)
             if (operation.type !== "DESELECT_ALL") {
                 this.historyManager.addOperation(operation, originalShape)
-                this.socket?.sendMessage("operation", operation)
+                const payload = { ...operation }
+                delete payload.inverse
+                this.socket?.sendMessage("operation", payload)
             } else if (this.canvasState.getSelectedShape() !== null) {
                 this.historyManager.addOperation(operation, originalShape)
-                this.socket?.sendMessage("operation", operation)
+                const payload = { ...operation }
+                delete payload.inverse
+                this.socket?.sendMessage("operation", payload)
             }
         }
 
