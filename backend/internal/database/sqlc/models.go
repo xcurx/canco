@@ -109,6 +109,7 @@ type Shape struct {
 	FontSize  pgtype.Float8    `json:"fontSize"`
 	Text      pgtype.Text      `json:"text"`
 	Rotation  float64          `json:"rotation"`
+	FillColor pgtype.Text      `json:"fillColor"`
 }
 
 type User struct {

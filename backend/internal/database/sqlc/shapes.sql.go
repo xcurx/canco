@@ -26,7 +26,7 @@ func (q *Queries) DeleteShape(ctx context.Context, arg DeleteShapeParams) error 
 }
 
 const getShape = `-- name: GetShape :one
-SELECT id, type, x, y, width, height, color, "zIndex", "rotation", "text", "fontSize", "canvasId", "updatedAt"
+SELECT id, type, x, y, width, height, color, "fillColor", "zIndex", "rotation", "text", "fontSize", "canvasId", "updatedAt"
 FROM "Shape"
 WHERE id = $1
 `
@@ -39,6 +39,7 @@ type GetShapeRow struct {
 	Width     float64          `json:"width"`
 	Height    float64          `json:"height"`
 	Color     string           `json:"color"`
+	FillColor pgtype.Text      `json:"fillColor"`
 	ZIndex    int32            `json:"zIndex"`
 	Rotation  float64          `json:"rotation"`
 	Text      pgtype.Text      `json:"text"`
@@ -58,6 +59,7 @@ func (q *Queries) GetShape(ctx context.Context, id string) (GetShapeRow, error) 
 		&i.Width,
 		&i.Height,
 		&i.Color,
+		&i.FillColor,
 		&i.ZIndex,
 		&i.Rotation,
 		&i.Text,
@@ -69,7 +71,7 @@ func (q *Queries) GetShape(ctx context.Context, id string) (GetShapeRow, error) 
 }
 
 const getShapesByCanvasId = `-- name: GetShapesByCanvasId :many
-SELECT id, type, x, y, width, height, color, "zIndex", "rotation", "text", "fontSize", "canvasId", "updatedAt"
+SELECT id, type, x, y, width, height, color, "fillColor", "zIndex", "rotation", "text", "fontSize", "canvasId", "updatedAt"
 FROM "Shape"
 WHERE "canvasId" = $1
 `
@@ -82,6 +84,7 @@ type GetShapesByCanvasIdRow struct {
 	Width     float64          `json:"width"`
 	Height    float64          `json:"height"`
 	Color     string           `json:"color"`
+	FillColor pgtype.Text      `json:"fillColor"`
 	ZIndex    int32            `json:"zIndex"`
 	Rotation  float64          `json:"rotation"`
 	Text      pgtype.Text      `json:"text"`
@@ -107,6 +110,7 @@ func (q *Queries) GetShapesByCanvasId(ctx context.Context, canvasid string) ([]G
 			&i.Width,
 			&i.Height,
 			&i.Color,
+			&i.FillColor,
 			&i.ZIndex,
 			&i.Rotation,
 			&i.Text,
@@ -125,8 +129,8 @@ func (q *Queries) GetShapesByCanvasId(ctx context.Context, canvasid string) ([]G
 }
 
 const upsertShape = `-- name: UpsertShape :exec
-INSERT INTO "Shape" (id, type, x, y, width, height, color, "zIndex", "text", "fontSize", "canvasId", "updatedAt") 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+INSERT INTO "Shape" (id, type, x, y, width, height, color, "fillColor", "zIndex", "rotation", "text", "fontSize", "canvasId", "updatedAt") 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
 ON CONFLICT (id) DO UPDATE 
 SET type = EXCLUDED.type,
     x = EXCLUDED.x,
@@ -134,6 +138,7 @@ SET type = EXCLUDED.type,
     width = EXCLUDED.width,
     height = EXCLUDED.height,
     color = EXCLUDED.color,
+    "fillColor" = EXCLUDED."fillColor",
     "zIndex" = EXCLUDED."zIndex",
     "rotation" = EXCLUDED."rotation",
     "text" = EXCLUDED."text",
@@ -143,17 +148,19 @@ SET type = EXCLUDED.type,
 `
 
 type UpsertShapeParams struct {
-	ID       string        `json:"id"`
-	Type     string        `json:"type"`
-	X        float64       `json:"x"`
-	Y        float64       `json:"y"`
-	Width    float64       `json:"width"`
-	Height   float64       `json:"height"`
-	Color    string        `json:"color"`
-	ZIndex   int32         `json:"zIndex"`
-	Text     pgtype.Text   `json:"text"`
-	FontSize pgtype.Float8 `json:"fontSize"`
-	CanvasId string        `json:"canvasId"`
+	ID        string        `json:"id"`
+	Type      string        `json:"type"`
+	X         float64       `json:"x"`
+	Y         float64       `json:"y"`
+	Width     float64       `json:"width"`
+	Height    float64       `json:"height"`
+	Color     string        `json:"color"`
+	FillColor pgtype.Text   `json:"fillColor"`
+	ZIndex    int32         `json:"zIndex"`
+	Rotation  float64       `json:"rotation"`
+	Text      pgtype.Text   `json:"text"`
+	FontSize  pgtype.Float8 `json:"fontSize"`
+	CanvasId  string        `json:"canvasId"`
 }
 
 func (q *Queries) UpsertShape(ctx context.Context, arg UpsertShapeParams) error {
@@ -165,7 +172,9 @@ func (q *Queries) UpsertShape(ctx context.Context, arg UpsertShapeParams) error 
 		arg.Width,
 		arg.Height,
 		arg.Color,
+		arg.FillColor,
 		arg.ZIndex,
+		arg.Rotation,
 		arg.Text,
 		arg.FontSize,
 		arg.CanvasId,
