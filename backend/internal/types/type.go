@@ -49,6 +49,7 @@ type Shape struct {
 	Width    float64 `json:"width"`
 	Height   float64 `json:"height"`
 	Color    string  `json:"color"`
+	FillColor string `json:"fillColor,omitempty"`
 	ZIndex   int     `json:"zIndex"`
 	Rotation float64 `json:"rotation"`
 	Text     string  `json:"text,omitempty"`
@@ -62,6 +63,7 @@ type PartialShape struct {
 	Width      *float64 `json:"width,omitempty"`
 	Height     *float64 `json:"height,omitempty"`
 	Color      *string  `json:"color,omitempty"`
+	FillColor  *string  `json:"fillColor,omitempty"`
 	IsSelected *bool    `json:"isSelected,omitempty"`
 	ZIndex     *int     `json:"zIndex,omitempty"`
 	Rotation   *float64 `json:"rotation,omitempty"`
@@ -85,12 +87,16 @@ const (
 	DeleteShape
 	SelectShape
 	DeselectAll
+	MultiSelectShapes
+	UpdateShapes
+	CreateShapes
+	DeleteShapes
 )
 
 func (ot OperationType) String() string {
 	// Note: We use ot-1 because iota + 1 makes the first value 1.
-	if ot >= CreateShape && ot <= DeselectAll {
-		return [...]string{"CREATE_SHAPE", "UPDATE_SHAPE", "DELETE_SHAPE", "SELECT_SHAPE", "DESELECT_ALL"}[ot-1]
+	if ot >= CreateShape && ot <= DeleteShapes {
+		return [...]string{"CREATE_SHAPE", "UPDATE_SHAPE", "DELETE_SHAPE", "SELECT_SHAPE", "DESELECT_ALL", "MULTISELECT_SHAPES", "UPDATE_SHAPES", "CREATE_SHAPES", "DELETE_SHAPES"}[ot-1]
 	}
 	return fmt.Sprintf("UnknownOperationType(%d)", ot)
 }
@@ -118,6 +124,14 @@ func (ot *OperationType) UnmarshalJSON(b []byte) error {
 		*ot = SelectShape
 	case "deselect_all":
 		*ot = DeselectAll
+	case "multiselect_shapes":
+		*ot = MultiSelectShapes
+	case "update_shapes":
+		*ot = UpdateShapes
+	case "create_shapes":
+		*ot = CreateShapes
+	case "delete_shapes":
+		*ot = DeleteShapes
 	default:
 		return fmt.Errorf("invalid operation type string: %q", s)
 	}
