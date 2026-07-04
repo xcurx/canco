@@ -30,7 +30,7 @@ const Canvas = ({ roomId }: CanvasProps) => {
 
   return (
     <div className='w-full h-full'>
-      <canvas ref={canvas} style={{backgroundColor:"#121212"}}></canvas>
+      <canvas ref={canvas} style={{backgroundColor:"#121212", touchAction: "none"}}></canvas>
       <EditTextarea/>
     </div>
   )
