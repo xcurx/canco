@@ -105,6 +105,7 @@ model Shape {
   width    Float
   height   Float
   color    String
+  fillColor String?
   zIndex   Int
   rotation Float  @default(0)
 
