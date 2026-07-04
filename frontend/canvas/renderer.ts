@@ -75,8 +75,6 @@ export class Renderer {
     }
 
     private applyOperation(operation: Operation, isSocket = false, saveToHistory=false, originalShape?: ShapeData): void {
-        console.log(this.getDebugInfo())
-
         if (isSocket) {
             // we don't care about the selection state of remote shapes.
             if (operation.type === 'CREATE_SHAPE') {
@@ -225,7 +223,7 @@ export class Renderer {
             
         } else {
             const selectedShape = this.canvasState.getSelectedShape()
-            if (selectedShape) {
+            if (selectedShape && selectedShape.id !== this.editingShapeId) {
                 drawSelectionCage(this.ctx, selectedShape, true)
             }
         }

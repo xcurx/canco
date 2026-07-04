@@ -73,6 +73,9 @@ export class InteractionManager implements InteractionContext {
     }
 
     handleMouseDown(coords: CanvasCoords, e: PointerEvent): void {
+        if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur()
+        }
         e.preventDefault()
         if (e.button === 2) return
         
