@@ -39,6 +39,7 @@ func update_shape(changes types.PartialShape, roomId string, db *database.DB) {
 	}
 	existing, err := db.Queries.GetShape(ctx, *changes.ID)
 	if err != nil {
+		log.Printf("Failed to GetShape %s: %v", *changes.ID, err)
 		return
 	}
 
