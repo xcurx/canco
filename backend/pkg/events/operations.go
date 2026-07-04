@@ -132,6 +132,9 @@ func updateShape(op types.Operation, room *types.Room, userID string, db *databa
 			if changes.Color != nil {
 				shape.Color = *changes.Color
 			}
+			if changes.FillColor != nil {
+				shape.FillColor = *changes.FillColor
+			}
 			if changes.ZIndex != nil {
 				shape.ZIndex = *changes.ZIndex
 			}
@@ -189,4 +192,101 @@ func deleteShape(op types.Operation, room *types.Room, userID string, db *databa
 	room.Mutex.Unlock()
 	log.Printf("Shape deleted: %+v", op.Data)
 	room.BroadcastEvent("DELETE_SHAPE", op)
+}
+
+func createShapes(op types.Operation, room *types.Room, userID string, db *database.DB, isPersistent bool) {
+	operationData, ok := op.Data.(map[string]interface{})
+	if !ok { return }
+
+	var data struct {
+		Shapes []types.Shape `json:"shapes"`
+	}
+	bytes, _ := json.Marshal(operationData)
+	json.Unmarshal(bytes, &data)
+
+	if isPersistent {
+		for _, s := range data.Shapes {
+			go create_shape(s, room.ID, db)
+		}
+	}
+
+	room.Mutex.Lock()
+	room.RoomState.Shapes = append(room.RoomState.Shapes, data.Shapes...)
+	room.Mutex.Unlock()
+	log.Printf("Shapes created: %d", len(data.Shapes))
+	room.BroadcastEvent("CREATE_SHAPES", op)
+}
+
+func updateShapes(op types.Operation, room *types.Room, userID string, db *database.DB, isPersistent bool) {
+	operationData, ok := op.Data.(map[string]interface{})
+	if !ok { return }
+
+	var data struct {
+		Updates []struct {
+			ID      string             `json:"id"`
+			Changes types.PartialShape `json:"changes"`
+		} `json:"updates"`
+	}
+	bytes, _ := json.Marshal(operationData)
+	json.Unmarshal(bytes, &data)
+
+	room.Mutex.Lock()
+	for _, update := range data.Updates {
+		if update.Changes.ID == nil && update.ID != "" {
+			update.Changes.ID = &update.ID
+		}
+		if isPersistent {
+			go update_shape(update.Changes, room.ID, db)
+		}
+
+		for i, shape := range room.RoomState.Shapes {
+			if shape.ID == update.ID {
+				if update.Changes.X != nil { room.RoomState.Shapes[i].X = *update.Changes.X }
+				if update.Changes.Y != nil { room.RoomState.Shapes[i].Y = *update.Changes.Y }
+				if update.Changes.Width != nil { room.RoomState.Shapes[i].Width = *update.Changes.Width }
+				if update.Changes.Height != nil { room.RoomState.Shapes[i].Height = *update.Changes.Height }
+				if update.Changes.Color != nil { room.RoomState.Shapes[i].Color = *update.Changes.Color }
+				if update.Changes.FillColor != nil { room.RoomState.Shapes[i].FillColor = *update.Changes.FillColor }
+				if update.Changes.ZIndex != nil { room.RoomState.Shapes[i].ZIndex = *update.Changes.ZIndex }
+				if update.Changes.Rotation != nil { room.RoomState.Shapes[i].Rotation = *update.Changes.Rotation }
+				if update.Changes.Text != nil { room.RoomState.Shapes[i].Text = *update.Changes.Text }
+				if update.Changes.FontSize != nil { room.RoomState.Shapes[i].FontSize = *update.Changes.FontSize }
+				break
+			}
+		}
+	}
+	room.Mutex.Unlock()
+	log.Printf("Shapes updated: %d", len(data.Updates))
+	room.BroadcastEvent("UPDATE_SHAPES", op)
+}
+
+func deleteShapes(op types.Operation, room *types.Room, userID string, db *database.DB, isPersistent bool) {
+	operationData, ok := op.Data.(map[string]interface{})
+	if !ok { return }
+
+	var data struct {
+		IDs []string `json:"ids"`
+	}
+	bytes, _ := json.Marshal(operationData)
+	json.Unmarshal(bytes, &data)
+
+	idMap := make(map[string]bool)
+	for _, id := range data.IDs {
+		idMap[id] = true
+		if isPersistent {
+			go delete_shape(id, room.ID, db)
+		}
+	}
+
+	room.Mutex.Lock()
+	newShapes := make([]types.Shape, 0)
+	for _, shape := range room.RoomState.Shapes {
+		if !idMap[shape.ID] {
+			newShapes = append(newShapes, shape)
+		}
+	}
+	room.RoomState.Shapes = newShapes
+	room.Mutex.Unlock()
+	log.Printf("Shapes deleted: %d", len(data.IDs))
+	room.BroadcastEvent("DELETE_SHAPES", op)
 }
