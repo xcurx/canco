@@ -1,6 +1,7 @@
 package events
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,6 +18,12 @@ func ComputeInverse(op types.Operation, state types.RoomState) *types.Operation 
 		return computeUpdateInverse(op, state)
 	case types.DeleteShape:
 		return computeDeleteInverse(op, state)
+	case types.CreateShapes:
+		return computeCreateShapesInverse(op)
+	case types.UpdateShapes:
+		return computeUpdateShapesInverse(op, state)
+	case types.DeleteShapes:
+		return computeDeleteShapesInverse(op, state)
 	default:
 		return nil
 	}
@@ -122,6 +129,8 @@ func computeUpdateInverse(op types.Operation, state types.RoomState) *types.Oper
 			inverseChanges["height"] = currentShape.Height
 		case "color":
 			inverseChanges["color"] = currentShape.Color
+		case "fillColor":
+			inverseChanges["fillColor"] = currentShape.FillColor
 		case "zIndex":
 			inverseChanges["zIndex"] = currentShape.ZIndex
 		case "rotation":
@@ -140,6 +149,123 @@ func computeUpdateInverse(op types.Operation, state types.RoomState) *types.Oper
 		Data: map[string]interface{}{
 			"id": shapeId,
 			"changes": inverseChanges,
+		},
+	}
+}
+
+func computeCreateShapesInverse(op types.Operation) *types.Operation {
+	data, ok := op.Data.(map[string]interface{})
+	if !ok { return nil }
+
+	var parsedData struct {
+		Shapes []types.Shape `json:"shapes"`
+	}
+	bytes, _ := json.Marshal(data)
+	json.Unmarshal(bytes, &parsedData)
+
+	ids := make([]string, 0)
+	for _, shape := range parsedData.Shapes {
+		ids = append(ids, shape.ID)
+	}
+
+	return &types.Operation{
+		ID:        uuid.New().String(),
+		Type:      types.DeleteShapes,
+		Timestamp: time.Now().UnixMilli(),
+		Data: map[string]interface{}{
+			"ids": ids,
+		},
+	}
+}
+
+func computeDeleteShapesInverse(op types.Operation, state types.RoomState) *types.Operation {
+	data, ok := op.Data.(map[string]interface{})
+	if !ok { return nil }
+
+	var parsedData struct {
+		IDs []string `json:"ids"`
+	}
+	bytes, _ := json.Marshal(data)
+	json.Unmarshal(bytes, &parsedData)
+
+	idMap := make(map[string]bool)
+	for _, id := range parsedData.IDs {
+		idMap[id] = true
+	}
+
+	deletedShapes := make([]types.Shape, 0)
+	for _, shape := range state.Shapes {
+		if idMap[shape.ID] {
+			deletedShapes = append(deletedShapes, shape)
+		}
+	}
+
+	return &types.Operation{
+		ID:        uuid.New().String(),
+		Type:      types.CreateShapes,
+		Timestamp: time.Now().UnixMilli(),
+		Data: map[string]interface{}{
+			"shapes": deletedShapes,
+		},
+	}
+}
+
+func computeUpdateShapesInverse(op types.Operation, state types.RoomState) *types.Operation {
+	data, ok := op.Data.(map[string]interface{})
+	if !ok { return nil }
+
+	var parsedData struct {
+		Updates []struct {
+			ID      string             `json:"id"`
+			Changes types.PartialShape `json:"changes"`
+		} `json:"updates"`
+	}
+	bytes, _ := json.Marshal(data)
+	json.Unmarshal(bytes, &parsedData)
+
+	shapeMap := make(map[string]*types.Shape)
+	for i, shape := range state.Shapes {
+		shapeMap[shape.ID] = &state.Shapes[i]
+	}
+
+	inverseUpdates := make([]map[string]interface{}, 0)
+
+	for _, update := range parsedData.Updates {
+		currentShape, exists := shapeMap[update.ID]
+		if !exists { continue }
+
+		changesBytes, _ := json.Marshal(update.Changes)
+		var changes map[string]interface{}
+		json.Unmarshal(changesBytes, &changes)
+
+		inverseChanges := make(map[string]interface{})
+		for key := range changes {
+			switch key {
+			case "x": inverseChanges["x"] = currentShape.X
+			case "y": inverseChanges["y"] = currentShape.Y
+			case "width": inverseChanges["width"] = currentShape.Width
+			case "height": inverseChanges["height"] = currentShape.Height
+			case "color": inverseChanges["color"] = currentShape.Color
+			case "fillColor": inverseChanges["fillColor"] = currentShape.FillColor
+			case "zIndex": inverseChanges["zIndex"] = currentShape.ZIndex
+			case "rotation": inverseChanges["rotation"] = currentShape.Rotation
+			case "text": inverseChanges["text"] = currentShape.Text
+			case "fontSize": inverseChanges["fontSize"] = currentShape.FontSize
+			}
+		}
+
+		inverseUpdates = append(inverseUpdates, map[string]interface{}{
+			"id": update.ID,
+			"changes": inverseChanges,
+		})
+	}
+
+	return &types.Operation{
+		ID:        uuid.New().String(),
+		Type:      types.UpdateShapes,
+		Timestamp: time.Now().UnixMilli(),
+		Data: map[string]interface{}{
+			"updates": inverseUpdates,
 		},
 	}
 }
@@ -202,6 +328,9 @@ func applyOperationToRoomState(op *types.Operation, room *types.Room, db *databa
 		}
 		if c, ok := shapeData["color"].(string); ok {
 			shape.Color = c
+		}
+		if fc, ok := shapeData["fillColor"].(string); ok {
+			shape.FillColor = fc
 		}
 		if z, ok := shapeData["zIndex"].(float64); ok {
 			shape.ZIndex = int(z)
@@ -268,9 +397,73 @@ func applyOperationToRoomState(op *types.Operation, room *types.Room, db *databa
 				if changes.FontSize != nil {
 					room.RoomState.Shapes[i].FontSize = *changes.FontSize
 				}
+				if changes.FillColor != nil {
+					room.RoomState.Shapes[i].FillColor = *changes.FillColor
+				}
 				break
 			}
 		}
+		
+	case types.CreateShapes:
+		data, ok := op.Data.(map[string]interface{})
+		if !ok { return }
+		var parsedData struct { Shapes []types.Shape `json:"shapes"` }
+		bytes, _ := json.Marshal(data)
+		json.Unmarshal(bytes, &parsedData)
+		if isPersistent {
+			for _, s := range parsedData.Shapes { go create_shape(s, room.ID, db) }
+		}
+		room.RoomState.Shapes = append(room.RoomState.Shapes, parsedData.Shapes...)
+
+	case types.UpdateShapes:
+		data, ok := op.Data.(map[string]interface{})
+		if !ok { return }
+		var parsedData struct {
+			Updates []struct {
+				ID      string             `json:"id"`
+				Changes types.PartialShape `json:"changes"`
+			} `json:"updates"`
+		}
+		bytes, _ := json.Marshal(data)
+		json.Unmarshal(bytes, &parsedData)
+
+		for _, update := range parsedData.Updates {
+			if update.Changes.ID == nil && update.ID != "" { update.Changes.ID = &update.ID }
+			if isPersistent { go update_shape(update.Changes, room.ID, db) }
+			for i, shape := range room.RoomState.Shapes {
+				if shape.ID == update.ID {
+					if update.Changes.X != nil { room.RoomState.Shapes[i].X = *update.Changes.X }
+					if update.Changes.Y != nil { room.RoomState.Shapes[i].Y = *update.Changes.Y }
+					if update.Changes.Width != nil { room.RoomState.Shapes[i].Width = *update.Changes.Width }
+					if update.Changes.Height != nil { room.RoomState.Shapes[i].Height = *update.Changes.Height }
+					if update.Changes.Color != nil { room.RoomState.Shapes[i].Color = *update.Changes.Color }
+					if update.Changes.FillColor != nil { room.RoomState.Shapes[i].FillColor = *update.Changes.FillColor }
+					if update.Changes.ZIndex != nil { room.RoomState.Shapes[i].ZIndex = *update.Changes.ZIndex }
+					if update.Changes.Rotation != nil { room.RoomState.Shapes[i].Rotation = *update.Changes.Rotation }
+					if update.Changes.Text != nil { room.RoomState.Shapes[i].Text = *update.Changes.Text }
+					if update.Changes.FontSize != nil { room.RoomState.Shapes[i].FontSize = *update.Changes.FontSize }
+					break
+				}
+			}
+		}
+
+	case types.DeleteShapes:
+		data, ok := op.Data.(map[string]interface{})
+		if !ok { return }
+		var parsedData struct { IDs []string `json:"ids"` }
+		bytes, _ := json.Marshal(data)
+		json.Unmarshal(bytes, &parsedData)
+
+		idMap := make(map[string]bool)
+		for _, id := range parsedData.IDs {
+			idMap[id] = true
+			if isPersistent { go delete_shape(id, room.ID, db) }
+		}
+		newShapes := make([]types.Shape, 0)
+		for _, shape := range room.RoomState.Shapes {
+			if !idMap[shape.ID] { newShapes = append(newShapes, shape) }
+		}
+		room.RoomState.Shapes = newShapes
 	}
 }
     
