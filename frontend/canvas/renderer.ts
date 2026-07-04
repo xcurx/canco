@@ -198,13 +198,14 @@ export class Renderer {
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height)
 
         this.ctx.save()
+        const dpr = window.devicePixelRatio || 1
         this.ctx.setTransform(
-            this.camera.scale,
+            this.camera.scale * dpr,
             0,
             0,
-            this.camera.scale,
-            this.camera.offsetX * this.camera.scale,
-            this.camera.offsetY * this.camera.scale
+            this.camera.scale * dpr,
+            this.camera.offsetX * this.camera.scale * dpr,
+            this.camera.offsetY * this.camera.scale * dpr
         )
         
         const shapes = this.canvasState.getAllShapes()

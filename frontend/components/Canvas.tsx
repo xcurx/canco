@@ -11,15 +11,28 @@ const Canvas = ({ roomId }: CanvasProps) => {
     const canvas = useRef<HTMLCanvasElement | null>(null)
     const [ctx, setCtx] = useState<CanvasRenderingContext2D | null>(null)
 
-    const { setRenderer } = useContext(RendererContext)
+    const { renderer, setRenderer } = useContext(RendererContext)
 
     useEffect(() => {
-        if(canvas.current){
-          canvas.current.width = innerWidth
-          canvas.current.height = innerHeight
-          setCtx(canvas.current.getContext('2d'))
+        const handleResize = () => {
+            if (canvas.current) {
+                const dpr = window.devicePixelRatio || 1
+                canvas.current.width = window.innerWidth * dpr
+                canvas.current.height = window.innerHeight * dpr
+                canvas.current.style.width = `${window.innerWidth}px`
+                canvas.current.style.height = `${window.innerHeight}px`
+                
+                if (!ctx) setCtx(canvas.current.getContext('2d'))
+                
+                if (renderer) {
+                    renderer.render()
+                }
+            }
         }
-    },[])
+        handleResize()
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [ctx, renderer])
 
     useEffect(() => {
       if(ctx){
