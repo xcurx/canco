@@ -19,7 +19,9 @@ func create_shape(shape types.Shape, roomId string, db *database.DB) {
 		Width: float64(shape.Width),
 		Height: float64(shape.Height),
 		Color: shape.Color,
+		FillColor: pgtype.Text{String: shape.FillColor, Valid: shape.FillColor != ""},
 		ZIndex: int32(shape.ZIndex),
+		Rotation: shape.Rotation,
 		Text: pgtype.Text{String: shape.Text, Valid: shape.Text != ""},
 		FontSize: pgtype.Float8{Float64: shape.FontSize, Valid: shape.FontSize > 0},
 		CanvasId: roomId,
@@ -45,7 +47,9 @@ func update_shape(changes types.PartialShape, roomId string, db *database.DB) {
 	if changes.Width != nil  { existing.Width  = float64(*changes.Width)  }
 	if changes.Height != nil { existing.Height = float64(*changes.Height) }
 	if changes.Color != nil  { existing.Color  = *changes.Color  }
+	if changes.FillColor != nil { existing.FillColor = pgtype.Text{String: *changes.FillColor, Valid: *changes.FillColor != ""} }
 	if changes.ZIndex != nil { existing.ZIndex = int32(*changes.ZIndex) }
+	if changes.Rotation != nil { existing.Rotation = *changes.Rotation }
 	if changes.Text != nil   { existing.Text = pgtype.Text{String: *changes.Text, Valid: *changes.Text != ""} }
 	if changes.FontSize != nil { existing.FontSize = pgtype.Float8{Float64: *changes.FontSize, Valid: *changes.FontSize > 0} }
 
@@ -57,7 +61,9 @@ func update_shape(changes types.PartialShape, roomId string, db *database.DB) {
 		Width:    existing.Width,
 		Height:   existing.Height,
 		Color:    existing.Color,
+		FillColor: existing.FillColor,
 		ZIndex:   existing.ZIndex,
+		Rotation: existing.Rotation,
 		Text:     existing.Text,
 		FontSize: existing.FontSize,
 		CanvasId: roomId,
