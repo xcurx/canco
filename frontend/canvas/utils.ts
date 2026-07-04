@@ -220,6 +220,26 @@ export function wrapText(
     return lines
 }
 
+export function getRotatedCorners(shape: ShapeData): Array<{x: number, y: number}> {
+    const cx = shape.x + shape.width / 2;
+    const cy = shape.y + shape.height / 2;
+    const rad = (shape.rotation * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+
+    const corners = [
+        { x: shape.x, y: shape.y },
+        { x: shape.x + shape.width, y: shape.y },
+        { x: shape.x + shape.width, y: shape.y + shape.height },
+        { x: shape.x, y: shape.y + shape.height }
+    ];
+
+    return corners.map(p => ({
+        x: cx + (p.x - cx) * cos - (p.y - cy) * sin,
+        y: cy + (p.x - cx) * sin + (p.y - cy) * cos
+    }));
+}
+
 export function getShapesBoundingBox(shapes: ShapeData[]): BoundingBox | null {
     if (shapes.length === 0) return null
     const minX = Math.min(...shapes.map(s => s.x))
