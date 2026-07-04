@@ -60,6 +60,7 @@ func (rm *RoomManager) GetOrCreateRoom(roomID string, isPersistent bool, db *dat
 				Width:    float64(s.Width),
 				Height:   float64(s.Height),
 				Color:    s.Color,
+				FillColor: s.FillColor.String,
 				ZIndex:   int(s.ZIndex),
 				Rotation: float64(s.Rotation),
 				Text:     s.Text.String,
