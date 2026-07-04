@@ -355,13 +355,17 @@ func applyOperationToRoomState(op *types.Operation, room *types.Room, db *databa
 		if !ok {
 			return
 		}
-		shapeID, ok := data["id"].(string)
-		if !ok {
-			return
+		var parsedData struct {
+			ID      string             `json:"id"`
+			Changes types.PartialShape `json:"changes"`
 		}
-		changes, ok := data["changes"].(types.PartialShape)
-		if !ok {
-			return
+		bytes, _ := json.Marshal(data)
+		json.Unmarshal(bytes, &parsedData)
+
+		shapeID := parsedData.ID
+		changes := parsedData.Changes
+		if changes.ID == nil && shapeID != "" {
+			changes.ID = &shapeID
 		}
 
 		if isPersistent {
