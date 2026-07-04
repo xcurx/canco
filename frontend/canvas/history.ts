@@ -136,7 +136,7 @@ export class HistoryManager {
                 const currentShape = originalShape ?? state.getShape(updateOp.data.id)
                 if (!currentShape) {
                     // Fallback: return a no-op inverse
-                    return op
+                    return { ...op }
                 }
 
                 // Capture the current values for properties being changed
@@ -233,7 +233,7 @@ export class HistoryManager {
             }
 
             default: {
-                return op
+                return { ...op }
             }
         }
     }
