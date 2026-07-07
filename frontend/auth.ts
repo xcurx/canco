@@ -7,6 +7,9 @@ import { SignJWT, jwtVerify } from "jose"
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [Google],
   adapter: PrismaAdapter(prisma),
+  pages: {
+    signIn: "/signin",
+  },
   session: {
     strategy: "jwt",
   },
