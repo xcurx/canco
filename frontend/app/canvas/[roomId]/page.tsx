@@ -18,7 +18,7 @@ export default async function CanvasPage(context : { params: Promise<{ roomId: s
   const session = await auth();
 
   if (!session?.user) {
-      redirect("/login",);
+      redirect("/signin");
   }
 
   const { roomId } = await context.params
