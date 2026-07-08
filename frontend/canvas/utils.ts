@@ -3,6 +3,30 @@ import { CanvasCoords, ShapeData } from './type'
 
 export interface BoundingBox { x: number; y: number; width: number; height: number }
 
+export function updateTempShape(
+    shape: ShapeData, 
+    startCoords: CanvasCoords, 
+    currentCoords: CanvasCoords
+): ShapeData {
+    const width = currentCoords.x - startCoords.x
+    const height = currentCoords.y - startCoords.y
+    if (shape.type === 'line') {
+        return { ...shape, x: startCoords.x, y: startCoords.y, width, height }
+    }
+    return {
+        ...shape,
+        x: width < 0 ? currentCoords.x : startCoords.x,
+        y: height < 0 ? currentCoords.y : startCoords.y,
+        width: width < 0 ? startCoords.x - currentCoords.x : width,
+        height: height < 0 ? startCoords.y - currentCoords.y : height
+    }
+}
+
+export function isShapeViable(shape: ShapeData, minSize: number = 15): boolean {
+    if (shape.type === 'text') return true
+    return Math.abs(shape.width) > minSize && Math.abs(shape.height) > minSize
+}
+
 export function calculateResize(
     shape: ShapeData, 
     handle: {type: string}, 
