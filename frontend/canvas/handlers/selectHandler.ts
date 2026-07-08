@@ -1,7 +1,7 @@
 import { InteractionContext, InteractionHandler } from './interactionHandler'
 import { CanvasCoords, CanvasState as CanvasStateEnum, ShapeData } from '../type'
 import { CanvasState, createRectangleData } from '../state'
-import { getRotatedCorners } from '../utils'
+import { getRotatedCorners, updateTempShape } from '../utils'
 
 export class SelectHandler implements InteractionHandler {
     private tempShape: ShapeData | null = null
@@ -16,7 +16,7 @@ export class SelectHandler implements InteractionHandler {
 
     onMouseMove(coords: CanvasCoords, e: PointerEvent): void {
         if (this.tempShape) {
-            this.tempShape = this.context.toolManager.updateTempShape(this.tempShape, this.startPoint, coords)
+            this.tempShape = updateTempShape(this.tempShape, this.startPoint, coords)
             this.context.updateTempShape(this.tempShape)
             const updates = this.applySelection()
         
