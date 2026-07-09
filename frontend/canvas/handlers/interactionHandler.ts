@@ -2,6 +2,7 @@ import { CanvasCoords, CanvasState as CanvasStateEnum, Operation, ShapeData } fr
 import { CanvasState } from '../state'
 import { Camera } from '../camera'
 import { ToolManager } from '../tools'
+import { Cursor } from '../cursor'
 
 // the methods the handlers will access from the main Manager
 export interface InteractionContext {
@@ -13,6 +14,7 @@ export interface InteractionContext {
     onEditText?: (shape: ShapeData) => void
     camera: Camera
     toolManager: ToolManager
+    cursor: Cursor
 }
 
 // every tool must implement this
