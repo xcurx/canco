@@ -12,6 +12,7 @@ import { RotateHandler } from './handlers/rotateHandler'
 import { CreateHandler } from './handlers/createHandler'
 import { PanHandler } from './handlers/panHandler'
 import { SelectHandler } from './handlers/selectHandler'
+import { Cursor } from './cursor'
 
 export type InteractionCallbacks = {
     onStateChange: (state: CanvasStateEnum) => void
@@ -41,7 +42,8 @@ export class InteractionManager implements InteractionContext {
         private callbacks: InteractionCallbacks,
         private _getCanvasState: () => CanvasState,
         public toolManager: ToolManager,
-        public camera: Camera
+        public camera: Camera,
+        public cursor: Cursor,
     ) {
         this.addEventListeners()
         this.shortcutManager = new ShortcutManager({
@@ -63,11 +65,11 @@ export class InteractionManager implements InteractionContext {
             },
             onSpaceDown: () => {
                 this.changeState(CanvasStateEnum.PANNING)
-                this.canvas.style.cursor = 'grab'
+                this.cursor.setCursorForState(CanvasStateEnum.PANNING)
             },
             onSpaceUp: () => {
                 this.changeState(CanvasStateEnum.IDLE)
-                this.canvas.style.cursor = 'default'
+                this.cursor.setCursorForState(CanvasStateEnum.IDLE)
             }
         })
     }
@@ -82,7 +84,7 @@ export class InteractionManager implements InteractionContext {
         // panning priority
         if (this.toolManager.getCurrentTool() === 'pan' || e.button === 1 || this.state === CanvasStateEnum.PANNING) {
             this.activeHandler = new PanHandler(this, e)
-            this.canvas.style.cursor = 'grabbing'
+            this.cursor.setCursorForState(CanvasStateEnum.PANNING)
             return
         }
 
@@ -163,10 +165,10 @@ export class InteractionManager implements InteractionContext {
             this.activeHandler = null
             
             if (this.state === CanvasStateEnum.PANNING && this.shortcutManager.getPressedKey() === "Space") {
-                this.canvas.style.cursor = 'grab'
+                this.cursor.setCursorForState(CanvasStateEnum.PANNING)
             } else {
                 this.changeState(CanvasStateEnum.IDLE)
-                this.canvas.style.cursor = this.toolManager.hasActiveTool() ? 'crosshair' : 'default'
+                this.toolManager.hasActiveTool() ? this.cursor.setCursorForState(CanvasStateEnum.CREATING_SHAPE) : this.cursor.setCursorForState(CanvasStateEnum.IDLE)
             }
         }
     }

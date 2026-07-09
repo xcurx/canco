@@ -1,7 +1,9 @@
+import { Cursor } from "./cursor"
+
 export type ToolType = 'rectangle' | 'circle' | 'line' | 'text' | 'select'| 'pan' | null
 
 export interface ToolManagerCallbacks {
-    onToolChange: (tool: ToolType) => void
+    onToolChange?: (tool: ToolType) => void
 }
 
 export class ToolManager {
@@ -9,13 +11,14 @@ export class ToolManager {
     private color: string = 'white'
     private strokeWidth: number = 2
 
-    constructor (private callbacks?: ToolManagerCallbacks) {
+    constructor (private cursor: Cursor, private callbacks?: ToolManagerCallbacks) {
         this.callbacks = callbacks
     }
 
     setCurrentTool(tool: ToolType): void {
         this.currentTool = tool
-        this.callbacks?.onToolChange(tool)
+        this.callbacks?.onToolChange?.(tool)
+        this.cursor.setCursorForTool(tool)
     }
 
     getCurrentTool(): ToolType {
@@ -50,6 +53,7 @@ export class ToolManager {
 
     clearTool(): void {
         this.currentTool = null
-        this.callbacks?.onToolChange(null)
+        this.callbacks?.onToolChange?.(null)
+        this.cursor.setCursorForTool(null)
     }
 }
