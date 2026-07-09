@@ -14,76 +14,23 @@ const Options = () => {
         if (!renderer) return
         console.log("Option changed to: ", value);
 
-        if (value === "select") {
-            setCurrentOption("select")
-            renderer.setCurrentTool(null)
-            return
-        }
-
-        if (value === "pan") {
-            setCurrentOption("pan")
-            renderer.setCurrentTool("pan")
-            return
-        }
-
-        if (value === "line") {
-            setCurrentOption("line")
-            renderer.setCurrentTool("line")
-            return
-        }
-
-        if (value === "rectangle") {
-            setCurrentOption("rectangle")
-            renderer.setCurrentTool("rectangle")
-            return
-        }
-
-        if (value === "circle") {
-            setCurrentOption("circle")
-            renderer.setCurrentTool("circle")
-            return
-        }
-
-        if (value === "text") {
-            setCurrentOption("text")
-            renderer?.setCurrentTool("text")
-            return
-        }
-    }
-
-    const handleUndo = () => {
-        if (renderer) {
-            renderer.undo()
-        }
-    }
-
-    const handleRedo = () => {
-        if (renderer) {
-            renderer.redo()
-        }
-    }
-
-    const handleHistoryChange = () => {
-        console.log("History changed")
-        if (renderer) {
-            setCanUndo(renderer.canUndo())
-            setCanRedo(renderer.canRedo())
-        }
+        renderer.toolManager.setCurrentTool(value as any)
+        setCurrentOption(value)
     }
 
     useEffect(() => {
         if (renderer) {
-            renderer.setHistoryCallbacks({
-                onHistoryChange: handleHistoryChange
+            renderer.historyManager.setCallbacks({
+                onHistoryChange: () => {
+                    setCanUndo(renderer.historyManager.canUndo())
+                    setCanRedo(renderer.historyManager.canRedo())
+                }
             })
-            renderer.setToolCallbacks({
+            renderer.toolManager.setCallbacks({
                 onToolChange: (tool) => setCurrentOption(tool || "select")
             })
         }
     }, [renderer])
-
-    console.log("Can undo: ", canUndo)
-    console.log("Can redo: ", canRedo)
 
   return (
     <div className='absolute top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2'>
@@ -103,10 +50,10 @@ const Options = () => {
         
         {/* Undo/Redo buttons */}
         <div className="flex gap-1">
-            <Button variant="outline" size="sm" onClick={handleUndo} disabled={!renderer || !canUndo}>
+            <Button variant="outline" size="sm" onClick={() => renderer?.undo()} disabled={!renderer || !canUndo}>
                 <Undo className="w-4 h-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={handleRedo} disabled={!renderer || !canRedo}>
+            <Button variant="outline" size="sm" onClick={() => renderer?.redo()} disabled={!renderer || !canRedo}>
                 <Redo className="w-4 h-4" />
             </Button>
         </div>
