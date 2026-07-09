@@ -1,11 +1,12 @@
 import { ShapeData, CanvasState as CanvasStateEnum, Operation } from './type'
 import { CanvasState } from './state'
 import { drawMultiSelectionCage, drawSelectionCage, renderShape } from './renderShapes'
-import { HistoryCallbacks, HistoryManager } from './history'
-import { ToolManager, ToolManagerCallbacks } from './tools'
+import { HistoryManager } from './history'
+import { ToolManager } from './tools'
 import { InteractionManager, InteractionCallbacks } from './interaction'
 import { Socket, Message } from '../websocket/socket'
 import { Camera } from './camera'
+import { Cursor } from './cursor'
 
 export class Renderer {
     private ctx: CanvasRenderingContext2D
@@ -13,8 +14,10 @@ export class Renderer {
     
     private canvasState: CanvasState = new CanvasState()
     
-    private historyManager: HistoryManager
-    private toolManager: ToolManager = new ToolManager()
+    public historyManager: HistoryManager
+    public toolManager: ToolManager
+    public cursor: Cursor
+
     private interactionManager: InteractionManager
     private camera: Camera = new Camera()
     
@@ -40,12 +43,15 @@ export class Renderer {
         }
         
         this.historyManager = new HistoryManager(() => this.canvasState)
+        this.cursor = new Cursor(canvas)
+        this.toolManager = new ToolManager(this.cursor)
         this.interactionManager = new InteractionManager(
             canvas,
             callbacks,
             () => this.canvasState,
             this.toolManager,
-            this.camera
+            this.camera,
+            this.cursor,
         )
 
         let baseUrl = process.env.NEXT_PUBLIC_API_URL || 'ws://localhost:8080';
@@ -157,9 +163,7 @@ export class Renderer {
 
     private handleStateChange(state: CanvasStateEnum): void {
         this.currentInteractionState = state
-        // console.log("Interaction state changed to:", state)
-        
-        this.updateCursor(state)
+        this.cursor.setCursorForState(state)
     }
 
     private updateTempShape(shape: ShapeData | null): void {
@@ -240,40 +244,6 @@ export class Renderer {
         this.ctx.restore()
     }
 
-    private updateCursor(state: CanvasStateEnum): void {
-        switch (state) {
-            case CanvasStateEnum.CREATING_SHAPE:
-                this.canvas.style.cursor = 'crosshair'
-                break
-            case CanvasStateEnum.MOVING_OBJECT:
-                this.canvas.style.cursor = 'move'
-                break
-            case CanvasStateEnum.RESIZING_OBJECT:
-                this.canvas.style.cursor = 'nw-resize'
-                break
-            case CanvasStateEnum.IDLE:
-            default:
-                this.canvas.style.cursor = this.toolManager.hasActiveTool() ? 'crosshair' : 'default'
-                break
-        }
-    }
-
-    setCurrentTool(tool: string | null): void {
-        this.toolManager.setCurrentTool(tool as any)
-        if (this.toolManager.getCurrentTool() === 'pan') {
-            this.currentInteractionState = CanvasStateEnum.PANNING
-        } else {
-            this.currentInteractionState = CanvasStateEnum.IDLE
-        }
-        this.updateCursor(this.currentInteractionState)
-        console.log(`Tool set to: ${tool}`)
-    }
-
-    setColor(color: string): void {
-        this.toolManager.setColor(color)
-        console.log(`Color set to: ${color}`)
-    }
-
     undo(): boolean {
         const result = this.historyManager.undo()
         if (result) {
@@ -304,22 +274,6 @@ export class Renderer {
         }
         console.log("Nothing to redo")
         return false
-    }
-
-    canUndo(): boolean {
-        return this.historyManager.canUndo()
-    }
-
-    canRedo(): boolean {
-        return this.historyManager.canRedo()
-    }
-
-    setHistoryCallbacks(callbacks: HistoryCallbacks): void {
-        this.historyManager.setCallbacks(callbacks)
-    }
-
-    setToolCallbacks(callbacks: ToolManagerCallbacks): void {
-        this.toolManager.setCallbacks(callbacks)
     }
 
     clear(): void {
