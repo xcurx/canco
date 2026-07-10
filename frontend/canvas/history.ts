@@ -1,9 +1,12 @@
-import { CreateShapeOperation, CreateShapesOperation, DeleteShapeOperation, DeleteShapesOperation, Operation, ShapeData, UpdateShapeOperation, UpdateShapesOperation } from './type'
+import { Operation, ShapeData } from './type'
 import { CanvasState } from './state'
+import { computeInverse } from './operations'
 
 export type HistoryCallbacks = {
-    onHistoryChange: () => void
+    onHistoryChange: ({type, state}: {type: "undo" | "redo", state: CanvasState}) => void
 }
+
+export type HistorySnapshot = {canUndo: boolean, canRedo: boolean}
 
 export class HistoryManager {
     private operationHistory: Operation[] = []
@@ -11,6 +14,8 @@ export class HistoryManager {
     private maxHistorySize = 50
     private getCanvasState: () => CanvasState
     private callbacks: HistoryCallbacks
+    private listners: Set<() => void> = new Set()
+    private snapshot: HistorySnapshot = {canUndo: false, canRedo: false}
 
     constructor(getCanvasState: () => CanvasState, callbacks?: HistoryCallbacks) {
         this.getCanvasState = getCanvasState
@@ -23,8 +28,29 @@ export class HistoryManager {
         }
     }
 
+    subscribe = (listner: () => void) => {
+        this.listners.add(listner)
+        return () => this.listners.delete(listner)
+    }
+
+    getSnapshot = (): HistorySnapshot => {
+        return this.snapshot
+    }
+
+    private notifyChange() {
+        const next: HistorySnapshot = {
+            canUndo: this.canUndo(),
+            canRedo: this.canRedo()
+        }
+        // only update snapshot and notify if values actually changed
+        if (next.canUndo !== this.snapshot.canUndo || next.canRedo !== this.snapshot.canRedo) {
+            this.snapshot = next
+            this.listners.forEach(listner => listner())
+        }
+    }
+
     addOperation(operation: Operation, originalShape?: ShapeData): void {
-        operation.inverse = this.computeInverse(operation, originalShape)
+        operation.inverse = computeInverse(operation, this.getCanvasState(), originalShape)
 
         // remove any operations after current index
         this.operationHistory = this.operationHistory.slice(0, this.currentHistoryIndex + 1)
@@ -40,38 +66,44 @@ export class HistoryManager {
         }
 
         console.log("History index is",this.currentHistoryIndex)
-        this.callbacks.onHistoryChange()
+        this.notifyChange()
     }
 
-    undo(): { state: CanvasState; inverseOp: Operation } | null {
-        if (this.currentHistoryIndex < 0) return null
+    undo(): boolean {
+        if (this.currentHistoryIndex < 0) return false
 
         const operation = this.operationHistory[this.currentHistoryIndex]
 
         if (!operation.inverse) {
             console.log("No inverse for operation, cannot undo")
-            return null
+            return false
         }
 
         const state = CanvasState.applyOperation(this.getCanvasState(), operation.inverse)
         this.currentHistoryIndex--
-        this.callbacks.onHistoryChange()
-        
-        return {
+        this.callbacks.onHistoryChange({
+            type: "undo",
             state,
-            inverseOp: operation.inverse
-        }
+        })
+        this.notifyChange()
+        
+        return true
     }
 
-    redo(): {state: CanvasState, operation: Operation} | null {
-        if (this.currentHistoryIndex >= this.operationHistory.length - 1) return null
+    redo(): boolean {
+        if (this.currentHistoryIndex >= this.operationHistory.length - 1) return false
 
         this.currentHistoryIndex++
         const operation = this.operationHistory[this.currentHistoryIndex]
         
         const state = CanvasState.applyOperation(this.getCanvasState(), operation)
-        this.callbacks.onHistoryChange()
-        return { state, operation }
+        this.callbacks.onHistoryChange({
+            type: "redo",
+            state,
+        })
+        this.notifyChange()
+        
+        return true
     }
 
     getCurrentHistoryIndex(): number {
@@ -93,7 +125,6 @@ export class HistoryManager {
     clear(): void {
         this.operationHistory = []
         this.currentHistoryIndex = -1
-        this.callbacks.onHistoryChange()
         console.log("History cleared")
     }
 
@@ -103,138 +134,6 @@ export class HistoryManager {
             currentIndex: this.currentHistoryIndex,
             canUndo: this.canUndo(),
             canRedo: this.canRedo()
-        }
-    }
-
-    private computeInverse(op: Operation, originalShape?: ShapeData): Operation {
-        const state = this.getCanvasState()
-        
-        switch (op.type) {
-            case "CREATE_SHAPE": {
-                const createOp = op as CreateShapeOperation
-                return {
-                    id: crypto.randomUUID(),
-                    type: "DELETE_SHAPE",
-                    timestamp: Date.now(),
-                    data: { id: createOp.data.shape.id }
-                }
-            }
-
-            case "DELETE_SHAPE": {
-                const deleteOp = op as DeleteShapeOperation
-                const deletedShape = state.getShape(deleteOp.data.id)
-                return {
-                    id: crypto.randomUUID(),
-                    type: 'CREATE_SHAPE',
-                    timestamp: Date.now(),
-                    data: { shape: deletedShape }
-                }
-            }
-
-            case 'UPDATE_SHAPE': {
-                const updateOp = op as UpdateShapeOperation
-                const currentShape = originalShape ?? state.getShape(updateOp.data.id)
-                if (!currentShape) {
-                    // Fallback: return a no-op inverse
-                    return { ...op }
-                }
-
-                // Capture the current values for properties being changed
-                const previousValues: Partial<ShapeData> = {}
-                for (const key of Object.keys(updateOp.data.changes) as (keyof ShapeData)[]) {
-                    previousValues[key] = currentShape[key] as any
-                }
-
-                return {
-                    id: crypto.randomUUID(),
-                    type: 'UPDATE_SHAPE',
-                    timestamp: Date.now(),
-                    data: { id: updateOp.data.id, changes: previousValues }
-                }
-            }
-
-            case 'SELECT_SHAPE': {
-                const selectedShape = state.getSelectedShape()
-                if (!selectedShape) {
-                    return {
-                        id: crypto.randomUUID(),
-                        type: 'DESELECT_ALL',
-                        timestamp: Date.now(),
-                        data: {}
-                    }
-                }
-                return {
-                    id: crypto.randomUUID(),
-                    type: 'SELECT_SHAPE',
-                    timestamp: Date.now(),
-                    data: { id: selectedShape.id }
-                }
-            }
-
-            case 'DESELECT_ALL': {
-                const selectedShape = state.getSelectedShape()
-                if (!selectedShape) {
-                    return {
-                        id: crypto.randomUUID(),
-                        type: 'DESELECT_ALL',
-                        timestamp: Date.now(),
-                        data: {}
-                    }
-                }
-                return {
-                    id: crypto.randomUUID(),
-                    type: 'SELECT_SHAPE',
-                    timestamp: Date.now(),
-                    data: { id: selectedShape.id }
-                }
-            }
-
-            case 'UPDATE_SHAPES': {
-                const updateOp = op as UpdateShapesOperation
-                const inverseUpdates = updateOp.data.updates.map(({ id, changes }) => {
-                    const currentShape = state.getShape(id)
-                    const previousValues: Partial<ShapeData> = {}
-                    if (currentShape) {
-                        for (const key of Object.keys(changes) as (keyof ShapeData)[]) {
-                            previousValues[key] = currentShape[key] as any
-                        }
-                    }
-                    return { id, changes: previousValues }
-                })
-                return {
-                    id: crypto.randomUUID(),
-                    type: 'UPDATE_SHAPES',
-                    timestamp: Date.now(),
-                    data: { updates: inverseUpdates }
-                }
-            }
-
-            case "CREATE_SHAPES": {
-                const createOp = op as CreateShapesOperation
-                return {
-                    id: crypto.randomUUID(),
-                    type: "DELETE_SHAPES",
-                    timestamp: Date.now(),
-                    data: { ids: createOp.data.shapes.map(s => s.id) }
-                }
-            }
-
-            case "DELETE_SHAPES": {
-                const deleteOp = op as DeleteShapesOperation
-                const deletedShapes = deleteOp.data.ids
-                    .map(id => state.getShape(id))
-                    .filter((s): s is ShapeData => s !== undefined)
-                return {
-                    id: crypto.randomUUID(),
-                    type: 'CREATE_SHAPES',
-                    timestamp: Date.now(),
-                    data: { shapes: deletedShapes }
-                }
-            }
-
-            default: {
-                return { ...op }
-            }
         }
     }
 }
