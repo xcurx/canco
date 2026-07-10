@@ -3,12 +3,12 @@ import { useContext, useEffect, useState } from 'react'
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { RectangleHorizontal, Circle as CircleIcon, LineChartIcon, Undo, Redo, Type, MousePointer2, Hand } from 'lucide-react'
 import { Button } from './ui/button'
+import { useHistory } from '@/lib/hook'
 
 const Options = () => {
     const {renderer} = useContext(RendererContext)
     const [currentOption, setCurrentOption] = useState<string | undefined>("select")
-    const [canUndo, setCanUndo] = useState(false)
-    const [canRedo, setCanRedo] = useState(false)
+    const { canUndo, canRedo } = useHistory(renderer?.historyManager ?? null)
 
     const handleOptionChange = (value: string) => {
         if (!renderer) return
@@ -20,12 +20,6 @@ const Options = () => {
 
     useEffect(() => {
         if (renderer) {
-            renderer.historyManager.setCallbacks({
-                onHistoryChange: () => {
-                    setCanUndo(renderer.historyManager.canUndo())
-                    setCanRedo(renderer.historyManager.canRedo())
-                }
-            })
             renderer.toolManager.setCallbacks({
                 onToolChange: (tool) => setCurrentOption(tool || "select")
             })
@@ -50,10 +44,10 @@ const Options = () => {
         
         {/* Undo/Redo buttons */}
         <div className="flex gap-1">
-            <Button variant="outline" size="sm" onClick={() => renderer?.undo()} disabled={!renderer || !canUndo}>
+            <Button variant="outline" size="sm" onClick={() => renderer?.historyManager.undo()} disabled={!renderer || !canUndo}>
                 <Undo className="w-4 h-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => renderer?.redo()} disabled={!renderer || !canRedo}>
+            <Button variant="outline" size="sm" onClick={() => renderer?.historyManager.redo()} disabled={!renderer || !canRedo}>
                 <Redo className="w-4 h-4" />
             </Button>
         </div>
