@@ -36,13 +36,13 @@ export class Renderer {
             onStateChange: (state) => this.handleStateChange(state),
             onApplyOperation: (operation, saveToHistory, originalShape) => this.applyOperation(operation, false, saveToHistory, originalShape),
             onUpdateTempShape: (shape) => this.updateTempShape(shape),
-            onUndo: () => this.undo(),
-            onRedo: () => this.redo(),
+            onUndo: () => this.historyManager.undo(),
+            onRedo: () => this.historyManager.redo(),
             onCameraChange: () => this.render(),
             onEditText: (shape) => this.onEditTextCallback?.(shape)
         }
         
-        this.historyManager = new HistoryManager(() => this.canvasState)
+        this.historyManager = new HistoryManager(() => this.canvasState, {onHistoryChange: (result) => this.onHistoryChange(result)})
         this.cursor = new Cursor(canvas)
         this.toolManager = new ToolManager(this.cursor)
         this.interactionManager = new InteractionManager(
@@ -244,36 +244,13 @@ export class Renderer {
         this.ctx.restore()
     }
 
-    undo(): boolean {
-        const result = this.historyManager.undo()
-        if (result) {
-            if (this.socket?.conn.readyState === WebSocket.OPEN) {
-                this.socket.sendMessage("undo", null)
-            } else {
-                this.canvasState = result.state
-                this.render()
-            }
-            console.log("Undo successful")
-            return true
+    onHistoryChange(result: {type: "undo" | "redo", state: CanvasState}) {
+        if (this.socket?.conn.readyState === WebSocket.OPEN) {
+            this.socket.sendMessage(result.type, null)
+        } else {
+            this.canvasState = result.state
+            this.render()
         }
-        console.log("Nothing to undo")
-        return false
-    }
-
-    redo(): boolean {
-        const result = this.historyManager.redo()
-        if (result) {
-            if (this.socket?.conn.readyState === WebSocket.OPEN) {
-                this.socket.sendMessage("redo", null)
-            } else {
-                this.canvasState = result.state
-                this.render()
-            }
-            console.log("Redo successful")
-            return true
-        }
-        console.log("Nothing to redo")
-        return false
     }
 
     clear(): void {
