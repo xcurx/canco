@@ -8,7 +8,7 @@ import { useHistory } from '@/lib/hook'
 const Options = () => {
     const {renderer} = useContext(RendererContext)
     const [currentOption, setCurrentOption] = useState<string | undefined>("select")
-    const { canUndo, canRedo } = useHistory(renderer?.historyManager ?? null)
+    const { canUndo, canRedo, undo, redo } = useHistory(renderer?.historyManager ?? null)
 
     const handleOptionChange = (value: string) => {
         if (!renderer) return
@@ -44,10 +44,10 @@ const Options = () => {
         
         {/* Undo/Redo buttons */}
         <div className="flex gap-1">
-            <Button variant="outline" size="sm" onClick={() => renderer?.historyManager.undo()} disabled={!renderer || !canUndo}>
+            <Button variant="outline" size="sm" onClick={undo} disabled={!canUndo}>
                 <Undo className="w-4 h-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => renderer?.historyManager.redo()} disabled={!renderer || !canRedo}>
+            <Button variant="outline" size="sm" onClick={redo} disabled={!canRedo}>
                 <Redo className="w-4 h-4" />
             </Button>
         </div>
