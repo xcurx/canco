@@ -6,6 +6,7 @@ import Canvas from "@/components/Canvas";
 import Collaborate from "@/components/Collaborate";
 import Options from "@/components/Options";
 import { RendererContext } from "@/components/renderer-context";
+import SidePanel from "./SidePanel";
 
 interface CanvasClientProps {
   roomId: string;
@@ -39,6 +40,7 @@ export default function CanvasClient({
             signOutAction={signOutAction}
             token={token}
           />
+          <SidePanel/>
           <Canvas roomId={roomId} />
         </div>
       </RendererContext.Provider>
