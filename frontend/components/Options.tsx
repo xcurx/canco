@@ -26,7 +26,7 @@ const Options = () => {
     }, [currentTool])
 
   return (
-    <div className='absolute top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2'>
+    <div className='dark absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-4 glass px-2 py-2 rounded-2xl shadow-xl text-zinc-200'>
         <ToggleGroup 
             type="single" 
             variant={"outline"} 

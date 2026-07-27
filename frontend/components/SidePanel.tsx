@@ -11,7 +11,7 @@ const SidePanel = () => {
   if (!colorVisible && !fillVisible) return null
 
   return (
-    <div className="bg-slate-900/60 p-4 rounded-md backdrop-blur-sm border absolute left-4 top-1/4 z-10 flex flex-col items-start gap-2">
+    <div className="dark glass p-3 rounded-2xl absolute left-4 top-1/4 z-10 flex flex-col items-start gap-5 shadow-xl">
         <PropertyColorPicker
           propertyKey="color"
           label="Stroke color"

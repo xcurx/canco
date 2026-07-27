@@ -43,17 +43,17 @@ const PropertyColorPicker = ({ propertyKey, label, setToolValue }: PropertyColor
   }
 
   return (
-    <>
-      <label className="font-bold text-sm">{label}</label>
+    <div className="flex flex-col gap-2.5">
+      <label className="font-medium text-xs text-zinc-400 uppercase tracking-wider">{label}</label>
       <ToggleGroup type="single" variant="outline" value={value}
-        onValueChange={handleChange} className="rounded-sm gap-2 grid grid-cols-6">
+        onValueChange={handleChange} className="gap-1.5 grid grid-cols-6">
         {COLORS.map(c => (
-          <ToggleGroupItem key={c} className="border-none p-0 h-auto" value={c}>
+          <ToggleGroupItem key={c} className="border-none p-0.5 h-auto hover:bg-white/[0.08]" value={c}>
             <ColorBox color={c} selected={value === c} />
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
-    </>
+    </div>
   )
 }
 
