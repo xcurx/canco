@@ -26,26 +26,28 @@ func (q *Queries) DeleteShape(ctx context.Context, arg DeleteShapeParams) error 
 }
 
 const getShape = `-- name: GetShape :one
-SELECT id, type, x, y, width, height, color, "fillColor", "zIndex", "rotation", "text", "fontSize", "canvasId", "updatedAt"
+SELECT id, type, x, y, width, height, color, "fillColor", "zIndex", "rotation", "strokeWidth", "opacity", "text", "fontSize", "canvasId", "updatedAt"
 FROM "Shape"
 WHERE id = $1
 `
 
 type GetShapeRow struct {
-	ID        string           `json:"id"`
-	Type      string           `json:"type"`
-	X         float64          `json:"x"`
-	Y         float64          `json:"y"`
-	Width     float64          `json:"width"`
-	Height    float64          `json:"height"`
-	Color     string           `json:"color"`
-	FillColor pgtype.Text      `json:"fillColor"`
-	ZIndex    int32            `json:"zIndex"`
-	Rotation  float64          `json:"rotation"`
-	Text      pgtype.Text      `json:"text"`
-	FontSize  pgtype.Float8    `json:"fontSize"`
-	CanvasId  string           `json:"canvasId"`
-	UpdatedAt pgtype.Timestamp `json:"updatedAt"`
+	ID          string           `json:"id"`
+	Type        string           `json:"type"`
+	X           float64          `json:"x"`
+	Y           float64          `json:"y"`
+	Width       float64          `json:"width"`
+	Height      float64          `json:"height"`
+	Color       string           `json:"color"`
+	FillColor   pgtype.Text      `json:"fillColor"`
+	ZIndex      int32            `json:"zIndex"`
+	Rotation    float64          `json:"rotation"`
+	StrokeWidth pgtype.Int4      `json:"strokeWidth"`
+	Opacity     float64          `json:"opacity"`
+	Text        pgtype.Text      `json:"text"`
+	FontSize    pgtype.Float8    `json:"fontSize"`
+	CanvasId    string           `json:"canvasId"`
+	UpdatedAt   pgtype.Timestamp `json:"updatedAt"`
 }
 
 func (q *Queries) GetShape(ctx context.Context, id string) (GetShapeRow, error) {
@@ -62,6 +64,8 @@ func (q *Queries) GetShape(ctx context.Context, id string) (GetShapeRow, error) 
 		&i.FillColor,
 		&i.ZIndex,
 		&i.Rotation,
+		&i.StrokeWidth,
+		&i.Opacity,
 		&i.Text,
 		&i.FontSize,
 		&i.CanvasId,
@@ -71,26 +75,28 @@ func (q *Queries) GetShape(ctx context.Context, id string) (GetShapeRow, error) 
 }
 
 const getShapesByCanvasId = `-- name: GetShapesByCanvasId :many
-SELECT id, type, x, y, width, height, color, "fillColor", "zIndex", "rotation", "text", "fontSize", "canvasId", "updatedAt"
+SELECT id, type, x, y, width, height, color, "fillColor", "zIndex", "rotation", "strokeWidth", "opacity", "text", "fontSize", "canvasId", "updatedAt"
 FROM "Shape"
 WHERE "canvasId" = $1
 `
 
 type GetShapesByCanvasIdRow struct {
-	ID        string           `json:"id"`
-	Type      string           `json:"type"`
-	X         float64          `json:"x"`
-	Y         float64          `json:"y"`
-	Width     float64          `json:"width"`
-	Height    float64          `json:"height"`
-	Color     string           `json:"color"`
-	FillColor pgtype.Text      `json:"fillColor"`
-	ZIndex    int32            `json:"zIndex"`
-	Rotation  float64          `json:"rotation"`
-	Text      pgtype.Text      `json:"text"`
-	FontSize  pgtype.Float8    `json:"fontSize"`
-	CanvasId  string           `json:"canvasId"`
-	UpdatedAt pgtype.Timestamp `json:"updatedAt"`
+	ID          string           `json:"id"`
+	Type        string           `json:"type"`
+	X           float64          `json:"x"`
+	Y           float64          `json:"y"`
+	Width       float64          `json:"width"`
+	Height      float64          `json:"height"`
+	Color       string           `json:"color"`
+	FillColor   pgtype.Text      `json:"fillColor"`
+	ZIndex      int32            `json:"zIndex"`
+	Rotation    float64          `json:"rotation"`
+	StrokeWidth pgtype.Int4      `json:"strokeWidth"`
+	Opacity     float64          `json:"opacity"`
+	Text        pgtype.Text      `json:"text"`
+	FontSize    pgtype.Float8    `json:"fontSize"`
+	CanvasId    string           `json:"canvasId"`
+	UpdatedAt   pgtype.Timestamp `json:"updatedAt"`
 }
 
 func (q *Queries) GetShapesByCanvasId(ctx context.Context, canvasid string) ([]GetShapesByCanvasIdRow, error) {
@@ -113,6 +119,8 @@ func (q *Queries) GetShapesByCanvasId(ctx context.Context, canvasid string) ([]G
 			&i.FillColor,
 			&i.ZIndex,
 			&i.Rotation,
+			&i.StrokeWidth,
+			&i.Opacity,
 			&i.Text,
 			&i.FontSize,
 			&i.CanvasId,
@@ -129,8 +137,8 @@ func (q *Queries) GetShapesByCanvasId(ctx context.Context, canvasid string) ([]G
 }
 
 const upsertShape = `-- name: UpsertShape :exec
-INSERT INTO "Shape" (id, type, x, y, width, height, color, "fillColor", "zIndex", "rotation", "text", "fontSize", "canvasId", "updatedAt") 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
+INSERT INTO "Shape" (id, type, x, y, width, height, color, "fillColor", "zIndex", "rotation", "strokeWidth", "opacity", "text", "fontSize", "canvasId", "updatedAt") 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())
 ON CONFLICT (id) DO UPDATE 
 SET type = EXCLUDED.type,
     x = EXCLUDED.x,
@@ -141,6 +149,8 @@ SET type = EXCLUDED.type,
     "fillColor" = EXCLUDED."fillColor",
     "zIndex" = EXCLUDED."zIndex",
     "rotation" = EXCLUDED."rotation",
+    "strokeWidth" = EXCLUDED."strokeWidth",
+    "opacity" = EXCLUDED."opacity",
     "text" = EXCLUDED."text",
     "fontSize" = EXCLUDED."fontSize",
     "canvasId" = EXCLUDED."canvasId",
@@ -148,19 +158,21 @@ SET type = EXCLUDED.type,
 `
 
 type UpsertShapeParams struct {
-	ID        string        `json:"id"`
-	Type      string        `json:"type"`
-	X         float64       `json:"x"`
-	Y         float64       `json:"y"`
-	Width     float64       `json:"width"`
-	Height    float64       `json:"height"`
-	Color     string        `json:"color"`
-	FillColor pgtype.Text   `json:"fillColor"`
-	ZIndex    int32         `json:"zIndex"`
-	Rotation  float64       `json:"rotation"`
-	Text      pgtype.Text   `json:"text"`
-	FontSize  pgtype.Float8 `json:"fontSize"`
-	CanvasId  string        `json:"canvasId"`
+	ID          string        `json:"id"`
+	Type        string        `json:"type"`
+	X           float64       `json:"x"`
+	Y           float64       `json:"y"`
+	Width       float64       `json:"width"`
+	Height      float64       `json:"height"`
+	Color       string        `json:"color"`
+	FillColor   pgtype.Text   `json:"fillColor"`
+	ZIndex      int32         `json:"zIndex"`
+	Rotation    float64       `json:"rotation"`
+	StrokeWidth pgtype.Int4   `json:"strokeWidth"`
+	Opacity     float64       `json:"opacity"`
+	Text        pgtype.Text   `json:"text"`
+	FontSize    pgtype.Float8 `json:"fontSize"`
+	CanvasId    string        `json:"canvasId"`
 }
 
 func (q *Queries) UpsertShape(ctx context.Context, arg UpsertShapeParams) error {
@@ -175,6 +187,8 @@ func (q *Queries) UpsertShape(ctx context.Context, arg UpsertShapeParams) error 
 		arg.FillColor,
 		arg.ZIndex,
 		arg.Rotation,
+		arg.StrokeWidth,
+		arg.Opacity,
 		arg.Text,
 		arg.FontSize,
 		arg.CanvasId,

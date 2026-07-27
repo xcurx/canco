@@ -28,7 +28,7 @@ func RoomExists(roomId string) bool {
 	}
 	roomManager.mutex.RLock()
 	defer roomManager.mutex.RUnlock()
-    _, ok := roomManager.Rooms[roomId]
+	_, ok := roomManager.Rooms[roomId]
 	return ok
 }
 
@@ -37,54 +37,56 @@ func (rm *RoomManager) GetOrCreateRoom(roomID string, isPersistent bool, db *dat
 	defer rm.mutex.Unlock()
 
 	if room, exists := rm.Rooms[roomID]; exists {
- 		return room    
+		return room
 	}
 
 	roomState := RoomState{
-		Shapes:     []Shape{},
-		History:    []Operation{},
+		Shapes:  []Shape{},
+		History: []Operation{},
 	}
 
-	if (isPersistent) {
-		shapes, err := db.Queries.GetShapesByCanvasId(context.Background(), roomID);
+	if isPersistent {
+		shapes, err := db.Queries.GetShapesByCanvasId(context.Background(), roomID)
 		if err != nil {
 			log.Printf("Error fetching shapes from db %v", err)
 		}
-		
+
 		for _, s := range shapes {
 			roomState.Shapes = append(roomState.Shapes, Shape{
-				ID:       s.ID,
-				Type:     s.Type,
-				X:        float64(s.X),
-				Y:        float64(s.Y),
-				Width:    float64(s.Width),
-				Height:   float64(s.Height),
-				Color:    s.Color,
-				FillColor: s.FillColor.String,
-				ZIndex:   int(s.ZIndex),
-				Rotation: float64(s.Rotation),
-				Text:     s.Text.String,
-				FontSize: s.FontSize.Float64,
+				ID:          s.ID,
+				Type:        s.Type,
+				X:           float64(s.X),
+				Y:           float64(s.Y),
+				Width:       float64(s.Width),
+				Height:      float64(s.Height),
+				Color:       s.Color,
+				FillColor:   s.FillColor.String,
+				ZIndex:      int(s.ZIndex),
+				Rotation:    float64(s.Rotation),
+				StrokeWidth: int(s.StrokeWidth.Int32),
+				Opacity:     float64(s.Opacity),
+				Text:        s.Text.String,
+				FontSize:    s.FontSize.Float64,
 			})
 		}
 	}
 
 	room := &Room{
-		ID:         roomID,
-		Title:      "Untitled Room",
-		Users:      []User{},
-		RoomState:  roomState,
+		ID:        roomID,
+		Title:     "Untitled Room",
+		Users:     []User{},
+		RoomState: roomState,
 	}
 	rm.Rooms[roomID] = room
 	return room
 }
 
 func (r *Room) AddUser(conn *websocket.Conn, userId string) string {
-    r.Mutex.Lock()
+	r.Mutex.Lock()
 	defer r.Mutex.Unlock()
 
 	user := User{
-		ID:  userId,
+		ID:   userId,
 		Name: "Anonymous",
 		UserState: UserState{
 			Operation: make([]Operation, 0),

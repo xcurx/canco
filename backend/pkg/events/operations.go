@@ -141,6 +141,12 @@ func updateShape(op types.Operation, room *types.Room, userID string, db *databa
 			if changes.Rotation != nil {
                 shape.Rotation = *changes.Rotation
 			}
+			if changes.StrokeWidth != nil {
+				shape.StrokeWidth = *changes.StrokeWidth
+			}
+			if changes.Opacity != nil {
+				shape.Opacity = *changes.Opacity
+			}
 			if changes.Text != nil {
 				shape.Text = *changes.Text
 			}
@@ -249,6 +255,8 @@ func updateShapes(op types.Operation, room *types.Room, userID string, db *datab
 				if update.Changes.FillColor != nil { room.RoomState.Shapes[i].FillColor = *update.Changes.FillColor }
 				if update.Changes.ZIndex != nil { room.RoomState.Shapes[i].ZIndex = *update.Changes.ZIndex }
 				if update.Changes.Rotation != nil { room.RoomState.Shapes[i].Rotation = *update.Changes.Rotation }
+				if update.Changes.StrokeWidth != nil { room.RoomState.Shapes[i].StrokeWidth = *update.Changes.StrokeWidth }
+				if update.Changes.Opacity != nil { room.RoomState.Shapes[i].Opacity = *update.Changes.Opacity }
 				if update.Changes.Text != nil { room.RoomState.Shapes[i].Text = *update.Changes.Text }
 				if update.Changes.FontSize != nil { room.RoomState.Shapes[i].FontSize = *update.Changes.FontSize }
 				break

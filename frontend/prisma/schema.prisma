@@ -98,16 +98,18 @@ enum Visibility {
 }
 
 model Shape {
-  id       String @id @default(cuid())
-  type     String
-  x        Float
-  y        Float
-  width    Float
-  height   Float
-  color    String
-  fillColor String?
-  zIndex   Int
-  rotation Float  @default(0)
+  id          String  @id @default(cuid())
+  type        String
+  x           Float
+  y           Float
+  width       Float
+  height      Float
+  color       String
+  fillColor   String?
+  zIndex      Int
+  rotation    Float   @default(0)
+  strokeWidth Int?
+  opacity     Float   @default(1)
 
   text     String?
   fontSize Float?

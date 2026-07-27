@@ -42,33 +42,37 @@ type RoomManager struct {
 }
 
 type Shape struct {
-	ID       string  `json:"id"`
-	Type     string  `json:"type"`
-	X        float64 `json:"x"`
-	Y        float64 `json:"y"`
-	Width    float64 `json:"width"`
-	Height   float64 `json:"height"`
-	Color    string  `json:"color"`
-	FillColor string `json:"fillColor,omitempty"`
-	ZIndex   int     `json:"zIndex"`
-	Rotation float64 `json:"rotation"`
-	Text     string  `json:"text,omitempty"`
-	FontSize float64 `json:"fontSize,omitempty"`
+	ID          string  `json:"id"`
+	Type        string  `json:"type"`
+	X           float64 `json:"x"`
+	Y           float64 `json:"y"`
+	Width       float64 `json:"width"`
+	Height      float64 `json:"height"`
+	Color       string  `json:"color"`
+	FillColor   string  `json:"fillColor,omitempty"`
+	ZIndex      int     `json:"zIndex"`
+	Rotation    float64 `json:"rotation"`
+	StrokeWidth int     `json:"strokeWidth,omitempty"`
+	Opacity     float64 `json:"opacity,omitempty"`
+	Text        string  `json:"text,omitempty"`
+	FontSize    float64 `json:"fontSize,omitempty"`
 }
 type PartialShape struct {
-	ID         *string  `json:"id,omitempty"`
-	Type       *string  `json:"type,omitempty"`
-	X          *float64 `json:"x,omitempty"`
-	Y          *float64 `json:"y,omitempty"`
-	Width      *float64 `json:"width,omitempty"`
-	Height     *float64 `json:"height,omitempty"`
-	Color      *string  `json:"color,omitempty"`
-	FillColor  *string  `json:"fillColor,omitempty"`
-	IsSelected *bool    `json:"isSelected,omitempty"`
-	ZIndex     *int     `json:"zIndex,omitempty"`
-	Rotation   *float64 `json:"rotation,omitempty"`
-	Text       *string  `json:"text,omitempty"`
-	FontSize   *float64 `json:"fontSize,omitempty"`
+	ID          *string  `json:"id,omitempty"`
+	Type        *string  `json:"type,omitempty"`
+	X           *float64 `json:"x,omitempty"`
+	Y           *float64 `json:"y,omitempty"`
+	Width       *float64 `json:"width,omitempty"`
+	Height      *float64 `json:"height,omitempty"`
+	Color       *string  `json:"color,omitempty"`
+	FillColor   *string  `json:"fillColor,omitempty"`
+	IsSelected  *bool    `json:"isSelected,omitempty"`
+	ZIndex      *int     `json:"zIndex,omitempty"`
+	Rotation    *float64 `json:"rotation,omitempty"`
+	StrokeWidth *int     `json:"strokeWidth,omitempty"`
+	Opacity     *float64 `json:"opacity,omitempty"`
+	Text        *string  `json:"text,omitempty"`
+	FontSize    *float64 `json:"fontSize,omitempty"`
 }
 
 type Operation struct {

@@ -95,21 +95,23 @@ type Session struct {
 }
 
 type Shape struct {
-	ID        string           `json:"id"`
-	Type      string           `json:"type"`
-	X         float64          `json:"x"`
-	Y         float64          `json:"y"`
-	Width     float64          `json:"width"`
-	Height    float64          `json:"height"`
-	Color     string           `json:"color"`
-	ZIndex    int32            `json:"zIndex"`
-	CanvasId  string           `json:"canvasId"`
-	CreatedAt pgtype.Timestamp `json:"createdAt"`
-	UpdatedAt pgtype.Timestamp `json:"updatedAt"`
-	FontSize  pgtype.Float8    `json:"fontSize"`
-	Text      pgtype.Text      `json:"text"`
-	Rotation  float64          `json:"rotation"`
-	FillColor pgtype.Text      `json:"fillColor"`
+	ID          string           `json:"id"`
+	Type        string           `json:"type"`
+	X           float64          `json:"x"`
+	Y           float64          `json:"y"`
+	Width       float64          `json:"width"`
+	Height      float64          `json:"height"`
+	Color       string           `json:"color"`
+	ZIndex      int32            `json:"zIndex"`
+	CanvasId    string           `json:"canvasId"`
+	CreatedAt   pgtype.Timestamp `json:"createdAt"`
+	UpdatedAt   pgtype.Timestamp `json:"updatedAt"`
+	FontSize    pgtype.Float8    `json:"fontSize"`
+	Text        pgtype.Text      `json:"text"`
+	Rotation    float64          `json:"rotation"`
+	FillColor   pgtype.Text      `json:"fillColor"`
+	StrokeWidth pgtype.Int4      `json:"strokeWidth"`
+	Opacity     float64          `json:"opacity"`
 }
 
 type User struct {

@@ -1,11 +1,11 @@
 -- name: GetShape :one
-SELECT id, type, x, y, width, height, color, "fillColor", "zIndex", "rotation", "text", "fontSize", "canvasId", "updatedAt"
+SELECT id, type, x, y, width, height, color, "fillColor", "zIndex", "rotation", "strokeWidth", "opacity", "text", "fontSize", "canvasId", "updatedAt"
 FROM "Shape"
 WHERE id = $1;
 
 -- name: UpsertShape :exec
-INSERT INTO "Shape" (id, type, x, y, width, height, color, "fillColor", "zIndex", "rotation", "text", "fontSize", "canvasId", "updatedAt") 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
+INSERT INTO "Shape" (id, type, x, y, width, height, color, "fillColor", "zIndex", "rotation", "strokeWidth", "opacity", "text", "fontSize", "canvasId", "updatedAt") 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())
 ON CONFLICT (id) DO UPDATE 
 SET type = EXCLUDED.type,
     x = EXCLUDED.x,
@@ -16,6 +16,8 @@ SET type = EXCLUDED.type,
     "fillColor" = EXCLUDED."fillColor",
     "zIndex" = EXCLUDED."zIndex",
     "rotation" = EXCLUDED."rotation",
+    "strokeWidth" = EXCLUDED."strokeWidth",
+    "opacity" = EXCLUDED."opacity",
     "text" = EXCLUDED."text",
     "fontSize" = EXCLUDED."fontSize",
     "canvasId" = EXCLUDED."canvasId",
@@ -25,6 +27,6 @@ SET type = EXCLUDED.type,
 DELETE FROM "Shape" WHERE id = $1 AND "canvasId" = $2;
 
 -- name: GetShapesByCanvasId :many
-SELECT id, type, x, y, width, height, color, "fillColor", "zIndex", "rotation", "text", "fontSize", "canvasId", "updatedAt"
+SELECT id, type, x, y, width, height, color, "fillColor", "zIndex", "rotation", "strokeWidth", "opacity", "text", "fontSize", "canvasId", "updatedAt"
 FROM "Shape"
 WHERE "canvasId" = $1;

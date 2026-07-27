@@ -135,6 +135,10 @@ func computeUpdateInverse(op types.Operation, state types.RoomState) *types.Oper
 			inverseChanges["zIndex"] = currentShape.ZIndex
 		case "rotation":
 			inverseChanges["rotation"] = currentShape.Rotation
+		case "strokeWidth":
+			inverseChanges["strokeWidth"] = currentShape.StrokeWidth
+		case "opacity":
+			inverseChanges["opacity"] = currentShape.Opacity
 		case "text":
 			inverseChanges["text"] = currentShape.Text
 		case "fontSize":
@@ -249,6 +253,8 @@ func computeUpdateShapesInverse(op types.Operation, state types.RoomState) *type
 			case "fillColor": inverseChanges["fillColor"] = currentShape.FillColor
 			case "zIndex": inverseChanges["zIndex"] = currentShape.ZIndex
 			case "rotation": inverseChanges["rotation"] = currentShape.Rotation
+			case "strokeWidth": inverseChanges["strokeWidth"] = currentShape.StrokeWidth
+			case "opacity": inverseChanges["opacity"] = currentShape.Opacity
 			case "text": inverseChanges["text"] = currentShape.Text
 			case "fontSize": inverseChanges["fontSize"] = currentShape.FontSize
 			}
@@ -338,6 +344,12 @@ func applyOperationToRoomState(op *types.Operation, room *types.Room, db *databa
 		if r, ok := shapeData["rotation"].(float64); ok {
 			shape.Rotation = float64(r)
 		}
+		if sw, ok := shapeData["strokeWidth"].(float64); ok {
+			shape.StrokeWidth = int(sw)
+		}
+		if o, ok := shapeData["opacity"].(float64); ok {
+			shape.Opacity = o
+		}
 		if t, ok := shapeData["text"].(string); ok {
 			shape.Text = t
 		}
@@ -395,6 +407,12 @@ func applyOperationToRoomState(op *types.Operation, room *types.Room, db *databa
 				if changes.Rotation != nil {
 					room.RoomState.Shapes[i].Rotation = *changes.Rotation
 				}
+				if changes.StrokeWidth != nil {
+					room.RoomState.Shapes[i].StrokeWidth = *changes.StrokeWidth
+				}
+				if changes.Opacity != nil {
+					room.RoomState.Shapes[i].Opacity = *changes.Opacity
+				}
 				if changes.Text != nil {
 					room.RoomState.Shapes[i].Text = *changes.Text
 				}
@@ -444,6 +462,8 @@ func applyOperationToRoomState(op *types.Operation, room *types.Room, db *databa
 					if update.Changes.FillColor != nil { room.RoomState.Shapes[i].FillColor = *update.Changes.FillColor }
 					if update.Changes.ZIndex != nil { room.RoomState.Shapes[i].ZIndex = *update.Changes.ZIndex }
 					if update.Changes.Rotation != nil { room.RoomState.Shapes[i].Rotation = *update.Changes.Rotation }
+					if update.Changes.StrokeWidth != nil { room.RoomState.Shapes[i].StrokeWidth = *update.Changes.StrokeWidth }
+					if update.Changes.Opacity != nil { room.RoomState.Shapes[i].Opacity = *update.Changes.Opacity }
 					if update.Changes.Text != nil { room.RoomState.Shapes[i].Text = *update.Changes.Text }
 					if update.Changes.FontSize != nil { room.RoomState.Shapes[i].FontSize = *update.Changes.FontSize }
 					break
