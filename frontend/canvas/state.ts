@@ -209,7 +209,7 @@ export class CanvasState {
     }
 }
 
-export function createLineData(x1: number, y1: number, x2: number, y2: number, color: string, r: number = 0): ShapeData {
+export function createLineData(x1: number, y1: number, x2: number, y2: number, color: string, r: number = 0, strokeWidth: number): ShapeData {
     return {
         id: crypto.randomUUID(),
         type: 'line',
@@ -219,12 +219,13 @@ export function createLineData(x1: number, y1: number, x2: number, y2: number, c
         height: y2 - y1,
         color,
         isSelected: true,
+        strokeWidth,
         zIndex: Date.now(),
         rotation: r,
     }
 }
 
-export function createRectangleData(x: number, y: number, width: number, height: number, color: string, r: number = 0, fillColor?: string): RectangleData {
+export function createRectangleData(x: number, y: number, width: number, height: number, color: string, r: number = 0, strokeWidth: number, fillColor?: string): RectangleData {
     return {
         id: crypto.randomUUID(),
         type: 'rectangle',
@@ -233,14 +234,15 @@ export function createRectangleData(x: number, y: number, width: number, height:
         width,
         height,
         color,
+        fillColor,
+        strokeWidth,
         isSelected: true,
         zIndex: Date.now(),
         rotation: r,
-        fillColor
     }
 }
 
-export function createCircleData(x: number, y: number, radiusX: number, radiusY: number, color: string, r: number = 0, fillColor?: string): CircleData {
+export function createCircleData(x: number, y: number, radiusX: number, radiusY: number, color: string, r: number = 0, strokeWidth: number, fillColor?: string): CircleData {
     return {
         id: crypto.randomUUID(),
         type: 'circle',
@@ -250,6 +252,7 @@ export function createCircleData(x: number, y: number, radiusX: number, radiusY:
         height: radiusY * 2,
         color,
         fillColor,
+        strokeWidth,
         isSelected: true,
         zIndex: Date.now(),
         rotation: r

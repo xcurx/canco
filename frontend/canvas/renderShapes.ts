@@ -16,6 +16,7 @@ export function renderLine(ctx: CanvasRenderingContext2D, shape: LineData): void
     ctx.moveTo(shape.x, shape.y)
     ctx.lineTo(shape.width + shape.x, shape.height + shape.y)
     ctx.strokeStyle = shape.color
+    ctx.lineWidth = shape.strokeWidth
     ctx.stroke()
 
     if (shape.isSelected) {
@@ -39,6 +40,7 @@ export function renderRectangle(ctx: CanvasRenderingContext2D, shape: RectangleD
     }
 
     ctx.strokeStyle = shape.color
+    ctx.lineWidth = shape.strokeWidth
     ctx.stroke()
 }
 
@@ -65,6 +67,7 @@ export function renderCircle(ctx: CanvasRenderingContext2D, shape: CircleData): 
     }
 
     ctx.strokeStyle = shape.color
+    ctx.lineWidth = shape.strokeWidth
     ctx.stroke()
 }
 

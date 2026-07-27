@@ -13,16 +13,19 @@ export interface BaseShapeData {
 
 export interface LineData extends BaseShapeData {
     type: 'line'
+    strokeWidth: number
 }
 
 export interface RectangleData extends BaseShapeData {
     type: 'rectangle'
     fillColor?: string
+    strokeWidth: number
 }
 
 export interface CircleData extends BaseShapeData {
     type: 'circle'
     fillColor?: string
+    strokeWidth: number
 }
 
 export interface TextData extends BaseShapeData {

@@ -12,9 +12,9 @@ export const checkProperty = (shape: ShapeData, property: string): boolean => {
 }
 
 const shapePropertyMap = {
-    line: ['color'],
-    rectangle: ['color', 'fillColor'],
-    circle: ['color', 'fillColor'],
+    line: ['color', 'strokeWidth'],
+    rectangle: ['color', 'fillColor', 'strokeWidth'],
+    circle: ['color', 'fillColor', 'strokeWidth'],
     text: ['color', 'text', 'fontSize'],
 } as const satisfies Record<ShapeData['type'], readonly string[]>
 
