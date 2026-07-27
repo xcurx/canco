@@ -16,6 +16,8 @@ const StrokeWidthSetter = () => {
     
     const handleChange = (value: number) => {
         setStrokeWidth(value)
+        if (!value || isNaN(value)) return
+        
         renderer?.toolManager.setStrokeWidth(value)
         selectedShapes.forEach(s => {
             if (checkProperty(s, 'strokeWidth')) {
@@ -40,8 +42,8 @@ const StrokeWidthSetter = () => {
   return (
     <div className="flex flex-col gap-2.5">
       <label className="font-medium text-xs text-zinc-400 uppercase tracking-wider">Stroke Width</label>
-      <ToggleGroup type="single" value={strokeWidth.toString()}
-        onValueChange={(v) => handleChange(Number(v))} className="flex items-center justify-between gap-2">
+      <ToggleGroup type="single" value={strokeWidth?.toString() || ""}
+        onValueChange={(v) => { if (v) handleChange(Number(v)) }} className="flex items-center justify-between gap-2">
         <div className="gap-1.5 grid grid-cols-3">
             {STROKE_WIDTHS.map(sw => (
             <ToggleGroupItem key={sw} className="border-none p-0.5 h-auto hover:bg-white/[0.08]" value={sw.toString()}>
