@@ -2,6 +2,7 @@ import PropertyColorPicker from "./sidepanel/PropertyColorPicker"
 import { useContext } from "react"
 import { RendererContext } from "./renderer-context"
 import { useShapeProperty } from "@/lib/hook"
+import StrokeWidthSetter from "./sidepanel/StrokeWidthSetter"
 
 const SidePanel = () => {
   const {renderer} = useContext(RendererContext)
@@ -22,6 +23,7 @@ const SidePanel = () => {
           label="Fill color"
           setToolValue={(v) => renderer?.toolManager.setFillColor(v)}
         />
+        <StrokeWidthSetter/>
     </div>
   )
 }
