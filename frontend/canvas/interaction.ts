@@ -131,7 +131,10 @@ export class InteractionManager implements InteractionContext {
         const shapes = canvasState.getAllShapes()
         const isShiftPressed = this.shortcutManager.getPressedKey() === "Shift"
         for (let i = shapes.length - 1; i >= 0; i--) {
-            if (isPointInShape(coords, shapes[i])) {
+            const select = "fillColor" in shapes[i] && (shapes[i] as any).fillColor !== "" ? 
+                            isPointInShapeInterior(coords, shapes[i]) : 
+                            isPointInShape(coords, shapes[i])
+            if (select) {
                 if (isShiftPressed) {
                     this.applyOperation(CanvasState.multiSelectShapes(shapes[i].id), true)
                 } else {
