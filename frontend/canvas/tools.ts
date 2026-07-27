@@ -8,7 +8,7 @@ export interface ToolManagerCallbacks {
 
 export class ToolManager {
     private currentTool: ToolType = null
-    private color: string = 'white'
+    private color: string = '#ffffff'
     private fillColor: string = ""
     private strokeWidth: number = 2
     private listners: Set<() => void> = new Set()

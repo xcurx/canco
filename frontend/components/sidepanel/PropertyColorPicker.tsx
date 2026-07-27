@@ -16,7 +16,7 @@ type PropertyColorPickerProps = {
 
 const PropertyColorPicker = ({ propertyKey, label, setToolValue }: PropertyColorPickerProps) => {
   const { renderer } = useContext(RendererContext)
-  const [value, setValue] = useState("white")
+  const [value, setValue] = useState("#ffffff")
   const { isVisible, selectedShapes } = useShapeProperty(renderer, propertyKey)
 
   const handleChange = (newColor: string) => {
@@ -46,7 +46,7 @@ const PropertyColorPicker = ({ propertyKey, label, setToolValue }: PropertyColor
     <>
       <label className="font-bold text-sm">{label}</label>
       <ToggleGroup type="single" variant="outline" value={value}
-        onValueChange={handleChange} className="rounded-sm gap-2">
+        onValueChange={handleChange} className="rounded-sm gap-2 grid grid-cols-6">
         {COLORS.map(c => (
           <ToggleGroupItem key={c} className="border-none p-0 h-auto" value={c}>
             <ColorBox color={c} selected={value === c} />
