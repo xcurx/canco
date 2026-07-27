@@ -28,6 +28,10 @@ export class Renderer {
     private socket: Socket | null = null
     private roomId?: string
 
+    private listners: Set<() => void> = new Set()
+    private selectedSnapshot: ShapeData[] = []
+    private pendingNotify = false
+
     constructor(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, roomId?: string) {
         this.ctx = ctx
         this.canvas = canvas
@@ -80,7 +84,7 @@ export class Renderer {
         addEventListener("resize", this.handleResize)   
     }
 
-    private applyOperation(operation: Operation, isSocket = false, saveToHistory=false, originalShape?: ShapeData): void {
+    public applyOperation(operation: Operation, isSocket = false, saveToHistory=false, originalShape?: ShapeData): void {
         if (isSocket) {
             // we don't care about the selection state of remote shapes.
             if (operation.type === 'CREATE_SHAPE') {
@@ -92,7 +96,6 @@ export class Renderer {
         }
 
         if (saveToHistory) {
-            console.log("Saving to history", operation)
             if (operation.type !== "DESELECT_ALL") {
                 this.historyManager.addOperation(operation, originalShape)
                 const payload = { ...operation }
@@ -106,8 +109,8 @@ export class Renderer {
             }
         }
 
-        console.log("Applying operation:", operation)
         this.canvasState = CanvasState.applyOperation(this.canvasState, operation)
+        this.notifyChange()
             
         this.render()
     }
@@ -196,6 +199,36 @@ export class Renderer {
 
     public getEditingShapeId() {
         return this.editingShapeId
+    }
+
+    public getSelectedShapes() {
+        if (this.canvasState.isMultiSelected) {
+            return this.canvasState.getSelectedShapes()
+        }
+        const shape = this.canvasState.getSelectedShape()
+        return shape ? [shape] : []
+    }
+
+    subscribe = (listner: () => void) => {
+        this.listners.add(listner)
+        return () => this.listners.delete(listner)
+    }
+
+    getSnapshot = () => {
+        return this.selectedSnapshot
+    }
+
+    private notifyChange = () => {
+        if (this.pendingNotify) return
+        this.pendingNotify = true
+        requestAnimationFrame(() => {
+            this.pendingNotify = false
+            const next = this.getSelectedShapes()
+            if (JSON.stringify(next) !== JSON.stringify(this.selectedSnapshot)) {
+                this.selectedSnapshot = next
+                this.listners.forEach(listner => listner())
+            }
+        })
     }
 
     render(): void {
