@@ -58,6 +58,12 @@ export function renderCircle(ctx: CanvasRenderingContext2D, shape: CircleData): 
         0,
         2 * Math.PI
     )
+
+    if (shape.fillColor) {
+        ctx.fillStyle = shape.fillColor
+        ctx.fill()
+    }
+
     ctx.strokeStyle = shape.color
     ctx.stroke()
 }

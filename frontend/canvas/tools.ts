@@ -9,7 +9,10 @@ export interface ToolManagerCallbacks {
 export class ToolManager {
     private currentTool: ToolType = null
     private color: string = 'white'
+    private fillColor: string = ""
     private strokeWidth: number = 2
+    private listners: Set<() => void> = new Set()
+    private snapshot: ToolType = null
 
     constructor (private cursor: Cursor, private callbacks?: ToolManagerCallbacks) {
         this.callbacks = callbacks
@@ -17,7 +20,7 @@ export class ToolManager {
 
     setCurrentTool(tool: ToolType): void {
         this.currentTool = tool
-        this.callbacks?.onToolChange?.(tool)
+        this.notifyChange()
         this.cursor.setCursorForTool(tool)
     }
 
@@ -42,6 +45,15 @@ export class ToolManager {
         return this.color
     }
 
+    setFillColor(color: string): void {
+        this.fillColor = color
+        console.log(`Tool fill color changed to: ${color}`)
+    }
+
+    getFillColor(): string {
+        return this.fillColor
+    }
+
     setStrokeWidth(width: number): void {
         this.strokeWidth = Math.max(1, width) // Minimum width of 1
         console.log(`Stroke width changed to: ${this.strokeWidth}`)
@@ -51,9 +63,26 @@ export class ToolManager {
         return this.strokeWidth
     }
 
+    subscribe = (listner: () => void) => {
+        this.listners.add(listner)
+        return () => this.listners.delete(listner)
+    }
+
+    getSnapshot = () => {
+        return this.snapshot
+    }
+
+    private notifyChange() {
+        const next = this.currentTool
+        if (next !== this.snapshot) {
+            this.snapshot = next
+            this.listners.forEach(listner => listner())
+        }
+    }
+
     clearTool(): void {
         this.currentTool = null
-        this.callbacks?.onToolChange?.(null)
+        this.notifyChange()
         this.cursor.setCursorForTool(null)
     }
 }

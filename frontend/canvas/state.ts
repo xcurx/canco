@@ -34,8 +34,6 @@ export class CanvasState {
         const newShapes = new Map(currentState.shapes)
         if (!operation) return currentState
 
-        console.log("Applying operation in CanvasState:", operation)
-
         switch (operation.type) {
             case 'CREATE_SHAPE': {
                 const op = operation as CreateShapeOperation
@@ -242,7 +240,7 @@ export function createRectangleData(x: number, y: number, width: number, height:
     }
 }
 
-export function createCircleData(x: number, y: number, radiusX: number, radiusY: number, color: string, r: number = 0): CircleData {
+export function createCircleData(x: number, y: number, radiusX: number, radiusY: number, color: string, r: number = 0, fillColor?: string): CircleData {
     return {
         id: crypto.randomUUID(),
         type: 'circle',
@@ -251,6 +249,7 @@ export function createCircleData(x: number, y: number, radiusX: number, radiusY:
         width: radiusX * 2,
         height: radiusY * 2,
         color,
+        fillColor,
         isSelected: true,
         zIndex: Date.now(),
         rotation: r

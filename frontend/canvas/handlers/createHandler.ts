@@ -40,9 +40,10 @@ export class CreateHandler implements InteractionHandler {
     private createShapeFromTool(coords: CanvasCoords): ShapeData | null {
         const tool = this.context.toolManager.getCurrentTool()
         const color = this.context.toolManager.getColor()
+        const fillColor = this.context.toolManager.getFillColor()
         switch (tool) {
-            case 'rectangle': return createRectangleData(coords.x, coords.y, 0, 0, color)
-            case 'circle':    return createCircleData(coords.x, coords.y, 0, 0, color)
+            case 'rectangle': return createRectangleData(coords.x, coords.y, 0, 0, color, 0, fillColor)
+            case 'circle':    return createCircleData(coords.x, coords.y, 0, 0, color, 0, fillColor)
             case 'line':      return createLineData(coords.x, coords.y, coords.x, coords.y, color)
             case 'text':      return createTextData(coords.x, coords.y, color, "")
             default:          return null
