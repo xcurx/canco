@@ -3,6 +3,7 @@ import { useContext } from "react"
 import { RendererContext } from "./renderer-context"
 import { useShapeProperty } from "@/lib/hook"
 import StrokeWidthSetter from "./sidepanel/StrokeWidthSetter"
+import { OpacitySetter } from "./sidepanel/OpacitySetter"
 
 const SidePanel = () => {
   const {renderer} = useContext(RendererContext)
@@ -24,6 +25,7 @@ const SidePanel = () => {
           setToolValue={(v) => renderer?.toolManager.setFillColor(v)}
         />
         <StrokeWidthSetter/>
+        <OpacitySetter/>
     </div>
   )
 }
