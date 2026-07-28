@@ -136,7 +136,11 @@ export class InteractionManager implements InteractionContext {
                             isPointInShape(coords, shapes[i])
             if (select) {
                 if (isShiftPressed) {
-                    this.applyOperation(CanvasState.multiSelectShapes(shapes[i].id), true)
+                    const currentSelected = canvasState.getSelectedShapes().map(s => s.id)
+                    const newSelected = currentSelected.includes(shapes[i].id) 
+                        ? currentSelected.filter(id => id !== shapes[i].id)
+                        : [...currentSelected, shapes[i].id]
+                    this.applyOperation(CanvasState.multiSelectShapes(newSelected), true)
                 } else {
                     this.applyOperation(CanvasState.selectShape(shapes[i].id), true)
                     // for instant drag

@@ -18,24 +18,21 @@ export class SelectHandler implements InteractionHandler {
         if (this.tempShape) {
             this.tempShape = updateTempShape(this.tempShape, this.startPoint, coords)
             this.context.updateTempShape(this.tempShape)
-            const updates = this.applySelection()
-        
+            const selectedIds = this.applySelection()
+
             // apply without saving to history to not spam the undo stack
-            this.context.applyOperation(CanvasState.updateShapes(updates), false)
+            this.context.applyOperation(CanvasState.multiSelectShapes(selectedIds), false)
         }
     }
 
     onMouseUp(coords: CanvasCoords, e: PointerEvent): void {
         if (this.tempShape) {
-            const updates = this.applySelection()
-            this.context.applyOperation(CanvasState.updateShapes(updates), true)
+            const selectedIds = this.applySelection()
+            this.context.applyOperation(CanvasState.multiSelectShapes(selectedIds), false)
         }
     }
 
-    private applySelection(): Array<{
-        id: string,
-        changes: Partial<ShapeData>
-    }> {
+    private applySelection(): string[] {
         if (!this.tempShape) return []
 
         const canvasState = this.context.getCanvasState()
@@ -43,29 +40,30 @@ export class SelectHandler implements InteractionHandler {
         const boxRight = this.tempShape.x + this.tempShape.width
         const boxBottom = this.tempShape.y + this.tempShape.height
         const isTooSmall = Math.abs(this.tempShape.width) < 3 && Math.abs(this.tempShape.height) < 3
-        
-        const updates = shapes.map(s => {
+
+        const selectedIds: string[] = []
+
+        shapes.forEach(s => {
             const corners = getRotatedCorners(s);
-            
+
             // to calculate intersection with the tempShape which can have negative width/height
             const tempMinX = Math.min(this.tempShape!.x, boxRight)
             const tempMaxX = Math.max(this.tempShape!.x, boxRight)
             const tempMinY = Math.min(this.tempShape!.y, boxBottom)
             const tempMaxY = Math.max(this.tempShape!.y, boxBottom)
 
-            const isInside = !isTooSmall && corners.every(c => 
-                c.x >= tempMinX && 
-                c.x <= tempMaxX && 
-                c.y >= tempMinY && 
+            const isInside = !isTooSmall && corners.every(c =>
+                c.x >= tempMinX &&
+                c.x <= tempMaxX &&
+                c.y >= tempMinY &&
                 c.y <= tempMaxY
             );
-                
-            return {
-                id: s.id,
-                changes: { isSelected: isInside }
+
+            if (isInside) {
+                selectedIds.push(s.id)
             }
         })
-        return updates
+        return selectedIds
     }
 
     cleanup(): void {

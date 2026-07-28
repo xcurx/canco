@@ -62,8 +62,13 @@ export class CanvasState {
             }
             case 'MULTISELECT_SHAPES': {
                 const op = operation as MultiSelectOperation
-                const target = newShapes.get(op.data.id)
-                if (target) newShapes.set(op.data.id, { ...target, isSelected: !target.isSelected })
+                newShapes.forEach((shape, id) => {
+                    if (shape.isSelected) newShapes.set(id, { ...shape, isSelected: false })
+                })
+                op.data.ids.forEach(id => {
+                    const target = newShapes.get(id)
+                    if (target) newShapes.set(id, { ...target, isSelected: true })
+                })
                 break
             }
             case 'DESELECT_ALL': {
@@ -165,12 +170,12 @@ export class CanvasState {
         }
     }
 
-    static multiSelectShapes(id: string): MultiSelectOperation {
+    static multiSelectShapes(ids: string[]): MultiSelectOperation {
         return {
             id: crypto.randomUUID(),
             type: 'MULTISELECT_SHAPES',
             timestamp: Date.now(),
-            data: { id }
+            data: { ids }
         }
     }
 

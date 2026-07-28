@@ -78,7 +78,7 @@ export interface SelectShapeOperation extends Operation {
 export interface MultiSelectOperation extends Operation {
     type: 'MULTISELECT_SHAPES'
     data: {
-        id: string
+        ids: string[]
     }
 }
 
