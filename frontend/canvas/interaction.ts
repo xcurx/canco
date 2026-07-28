@@ -197,6 +197,7 @@ export class InteractionManager implements InteractionContext {
         this.canvas.removeEventListener("pointerup", this.onPointerUp)
         this.canvas.removeEventListener("wheel", this.onWheel)
         this.canvas.removeEventListener("dblclick", this.onDoubleClick)
+        this.canvas.removeEventListener("mousedown", this.onMouseDownPrevent)
         this.shortcutManager.cleanup()
     }
 
@@ -206,12 +207,15 @@ export class InteractionManager implements InteractionContext {
         this.canvas.addEventListener("pointerup", this.onPointerUp)
         this.canvas.addEventListener("wheel", this.onWheel, { passive: false })
         this.canvas.addEventListener("dblclick", this.onDoubleClick)
+        // prevent native middle click auto scroll (pointerdown preventDefault is not enough in some browsers)  
+        this.canvas.addEventListener("mousedown", this.onMouseDownPrevent)
     }
 
     private onPointerDown = (e: PointerEvent) => this.handleMouseDown(this.getCanvasCoordinates(e), e)
     private onPointerMove = (e: PointerEvent) => this.handleMouseMove(this.getCanvasCoordinates(e), e)
     private onPointerUp = (e: PointerEvent) => this.handleMouseUp(this.getCanvasCoordinates(e), e)
     private onWheel = (e: WheelEvent) => this.handleWheel(e)
+    private onMouseDownPrevent = (e: MouseEvent) => { if (e.button === 1) e.preventDefault() }
     
     private onDoubleClick = (e: MouseEvent) => {
         if (this.state !== CanvasStateEnum.IDLE) return
