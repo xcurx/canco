@@ -9,6 +9,7 @@ export interface BaseShapeData {
     isSelected: boolean
     zIndex: number
     rotation: number
+    opacity: number
 }
 
 export interface LineData extends BaseShapeData {

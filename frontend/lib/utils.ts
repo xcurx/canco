@@ -12,10 +12,10 @@ export const checkProperty = (shape: ShapeData, property: string): boolean => {
 }
 
 const shapePropertyMap = {
-    line: ['color', 'strokeWidth'],
-    rectangle: ['color', 'fillColor', 'strokeWidth'],
-    circle: ['color', 'fillColor', 'strokeWidth'],
-    text: ['color', 'text', 'fontSize'],
+    line: ['color', 'strokeWidth', 'opacity'],
+    rectangle: ['color', 'fillColor', 'strokeWidth', 'opacity'],
+    circle: ['color', 'fillColor', 'strokeWidth', 'opacity'],
+    text: ['color', 'text', 'fontSize', 'opacity'],
 } as const satisfies Record<ShapeData['type'], readonly string[]>
 
 export const checkPropertyForTool = (type: ToolType, property: string): boolean => {

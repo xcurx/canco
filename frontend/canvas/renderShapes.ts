@@ -84,6 +84,8 @@ export function renderShape(ctx: CanvasRenderingContext2D, shape: ShapeData, sho
     shape.x = -shape.width / 2
     shape.y = -shape.height / 2
 
+    ctx.globalAlpha = shape.opacity
+
     switch (shape.type) {
         case 'line':
             renderLine(ctx, shape)

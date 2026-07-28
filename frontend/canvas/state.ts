@@ -209,7 +209,7 @@ export class CanvasState {
     }
 }
 
-export function createLineData(x1: number, y1: number, x2: number, y2: number, color: string, r: number = 0, strokeWidth: number): ShapeData {
+export function createLineData(x1: number, y1: number, x2: number, y2: number, color: string, r: number = 0, strokeWidth: number, opacity: number = 1): ShapeData {
     return {
         id: crypto.randomUUID(),
         type: 'line',
@@ -222,10 +222,11 @@ export function createLineData(x1: number, y1: number, x2: number, y2: number, c
         strokeWidth,
         zIndex: Date.now(),
         rotation: r,
+        opacity,
     }
 }
 
-export function createRectangleData(x: number, y: number, width: number, height: number, color: string, r: number = 0, strokeWidth: number, fillColor?: string): RectangleData {
+export function createRectangleData(x: number, y: number, width: number, height: number, color: string, r: number = 0, strokeWidth: number, opacity: number = 1, fillColor?: string): RectangleData {
     return {
         id: crypto.randomUUID(),
         type: 'rectangle',
@@ -239,10 +240,11 @@ export function createRectangleData(x: number, y: number, width: number, height:
         isSelected: true,
         zIndex: Date.now(),
         rotation: r,
+        opacity,
     }
 }
 
-export function createCircleData(x: number, y: number, radiusX: number, radiusY: number, color: string, r: number = 0, strokeWidth: number, fillColor?: string): CircleData {
+export function createCircleData(x: number, y: number, radiusX: number, radiusY: number, color: string, r: number = 0, strokeWidth: number, opacity: number = 1, fillColor?: string): CircleData {
     return {
         id: crypto.randomUUID(),
         type: 'circle',
@@ -255,11 +257,12 @@ export function createCircleData(x: number, y: number, radiusX: number, radiusY:
         strokeWidth,
         isSelected: true,
         zIndex: Date.now(),
-        rotation: r
+        rotation: r,
+        opacity,
     }
 }
 
-export function createTextData(x: number, y: number, color: string, text: string, r: number = 0): TextData {
+export function createTextData(x: number, y: number, color: string, text: string, r: number = 0, opacity: number = 1): TextData {
     return {
         id: crypto.randomUUID(),
         type: 'text',
@@ -272,6 +275,7 @@ export function createTextData(x: number, y: number, color: string, text: string
         zIndex: Date.now(),
         text,
         fontSize: 24,
-        rotation: r
+        rotation: r,
+        opacity,
     }
 }

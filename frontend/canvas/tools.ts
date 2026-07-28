@@ -11,6 +11,7 @@ export class ToolManager {
     private color: string = '#ffffff'
     private fillColor: string = ""
     private strokeWidth: number = 2
+    private opacity: number = 1
     private listners: Set<() => void> = new Set()
     private snapshot: ToolType = null
 
@@ -61,6 +62,14 @@ export class ToolManager {
 
     getStrokeWidth(): number {
         return this.strokeWidth
+    }
+
+    setOpacity(opacity: number): void {
+        this.opacity = Math.max(0, Math.min(1, opacity))
+    }
+
+    getOpacity(): number {
+        return this.opacity
     }
 
     subscribe = (listner: () => void) => {

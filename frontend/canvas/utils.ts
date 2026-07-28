@@ -288,6 +288,7 @@ export function getMultiResizeUpdates(
         height: originalBoundingBox.height,
         color: '', isSelected: false, zIndex: 0, rotation: 0,
         strokeWidth: 1,
+        opacity: 1,
     }
     const newBoxDimensions = calculateRotatedResize(dummyBox, handle, coords)
     
