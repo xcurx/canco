@@ -1,6 +1,8 @@
 package server
 
 import (
+	"strings"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/xcurx/canco-backend/internal/config"
@@ -13,7 +15,7 @@ func InitializeServer(db *database.DB) *gin.Engine {
 	cfg := config.Load()
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
-			AllowOrigins: []string{cfg.AllowOrigin},
+			AllowOrigins: strings.Split(cfg.AllowOrigin, ","),
 			AllowMethods: []string{"GET", "POST", "PUT", "DELETE","OPTIONS"},
 			AllowHeaders: []string{"Accept", "Content-Type", "Accept"},
 			AllowCredentials: true,
