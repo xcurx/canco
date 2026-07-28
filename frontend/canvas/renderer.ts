@@ -90,6 +90,24 @@ export class Renderer {
             if (operation.type === 'CREATE_SHAPE') {
                 operation.data.shape.isSelected = false
             }
+
+            const selectedShapeIds = this.getSelectedShapes().map(s => s.id)
+            const currentState = this.getInteractionState()
+            const isInteracting = currentState === CanvasStateEnum.MOVING_OBJECT || 
+                currentState === CanvasStateEnum.RESIZING_OBJECT ||
+                currentState === CanvasStateEnum.ROTATING_OBJECT
+            
+            // only ignore incoming updates if we are interacting with the same shape
+            if (isInteracting) {
+                if (operation.type === "UPDATE_SHAPE") {
+                    if (selectedShapeIds.includes(operation.data.id)) return
+                } else if (operation.type === "UPDATE_SHAPES") {
+                    // filter updates targeting selected shapes
+                    operation.data.updates = operation.data.updates.filter((u: any) => !selectedShapeIds.includes(u.id))
+                    if (operation.data.updates.length === 0) return;
+                }
+            }
+
             this.canvasState = CanvasState.applyOperation(this.canvasState, operation)
             this.render()
             return
