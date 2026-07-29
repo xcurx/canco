@@ -7,6 +7,8 @@ export class RemoteCursor {
     readonly id: string
     x: number = 0
     y: number = 0
+    private targetX: number = 0
+    private targetY: number = 0
 
     private svg: string = CURSOR_SVG;
     private img: HTMLImageElement;
@@ -17,6 +19,8 @@ export class RemoteCursor {
         this.color = getColorForUser(id)
         this.x = x
         this.y = y
+        this.targetX = x
+        this.targetY = y
 
         this.svg = this.svg.replaceAll("black", this.color)
         const svgBlob = new Blob([this.svg], { type: "image/svg+xml;charset=utf-8" })
@@ -43,7 +47,23 @@ export class RemoteCursor {
     }
 
     update(newX: number, newY: number) {
-        this.x = newX
-        this.y = newY
+        this.targetX = newX
+        this.targetY = newY
+    }
+
+    updateInterpolation(): boolean {
+        const dx = this.targetX - this.x;
+        const dy = this.targetY - this.y;
+        
+        if (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1) {
+            this.x = this.targetX;
+            this.y = this.targetY;
+            return false;
+        }
+
+        // lerp factor (higher is faster, lower is smoother)
+        this.x += dx * 0.4;
+        this.y += dy * 0.4;
+        return true;
     }
 }

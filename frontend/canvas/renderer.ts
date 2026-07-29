@@ -35,6 +35,8 @@ export class Renderer {
     private selectedSnapshot: ShapeData[] = []
     private pendingNotify = false
 
+    private cursorAnimationFrame: number | null = null
+
     constructor(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, roomId?: string) {
         this.ctx = ctx
         this.canvas = canvas
@@ -388,7 +390,7 @@ export class Renderer {
             } else {
                 this.remoteCursors.set(data.id, new RemoteCursor(data.id, data.name, data.x, data.y))
             }
-            this.render()
+            this.startCursorAnimation()
             return
         }
         this.applyOperation(msg.data, true)
@@ -405,5 +407,28 @@ export class Renderer {
 
     animate = (): void => {
         this.render()
+    }
+
+    private startCursorAnimation() {
+        if (this.cursorAnimationFrame === null) {
+            this.animateCursors();
+        }
+    }
+
+    private animateCursors = () => {
+        let needsAnotherFrame = false;
+        
+        for (const cursor of this.remoteCursors.values()) {
+            if (cursor.updateInterpolation()) {
+                needsAnotherFrame = true;
+            }
+        }
+
+        if (needsAnotherFrame) {
+            this.render();
+            this.cursorAnimationFrame = requestAnimationFrame(this.animateCursors);
+        } else {
+            this.cursorAnimationFrame = null;
+        }
     }
 }
