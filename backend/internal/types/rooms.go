@@ -142,3 +142,28 @@ func (r *Room) BroadcastEvent(eventType string, data interface{}) {
 		}
 	}
 }
+
+func (r *Room) BroadcastEventToOthers(eventType string, data interface{}, senderID string) {
+    r.Mutex.RLock()
+	defer r.Mutex.RUnlock()
+
+	event := Event{
+		Type: eventType,
+		Data: data,
+	}
+
+	message, err := json.Marshal(event)
+	if err != nil {
+		log.Println("Marshal error:", err)
+		return
+	}
+
+	for _, user := range r.Users {
+        if user.ID == senderID {
+            continue
+        }
+		if err := user.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
+			log.Println("WriteMessage error for user", user.ID, ":", err)
+		}
+	}
+}
