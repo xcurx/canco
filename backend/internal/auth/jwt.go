@@ -6,7 +6,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func ValidateToken(tokenString string, secret string) (string, error) {
+func ValidateToken(tokenString string, secret string) (string, string, error) {
 	jwtSecret := []byte(secret)
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
@@ -17,16 +17,17 @@ func ValidateToken(tokenString string, secret string) (string, error) {
 	})
       
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		userId, ok := claims["id"].(string)
+		name, ok := claims["name"].(string)
 		if 	!ok {
-			return "", fmt.Errorf("id claim is missing or not a string")
+			return "", "", fmt.Errorf("id claim is missing or not a string")
 		}
-		return userId, nil
+		return userId, name, nil
 	}
 
-	return "", fmt.Errorf("invalid token")
+	return "", "", fmt.Errorf("invalid token")
 }

@@ -25,12 +25,13 @@ func (h *Handler) Connect(c *gin.Context) {
 	cfg := config.Load()
 	tokenString := c.Query("token")
 	var userId string
+	var name string
 	var err error
 	var isPersistent bool
 
 	// if a token is provided try to authenticate
 	if tokenString != "" {
-		userId, err = auth.ValidateToken(tokenString, cfg.AuthSecret)
+		userId, name, err = auth.ValidateToken(tokenString, cfg.AuthSecret)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 			return
@@ -39,6 +40,7 @@ func (h *Handler) Connect(c *gin.Context) {
 	} else {
 		// no token means its a local connection
 		userId = "guest_" + c.ClientIP()
+		name = "Anonymous"
 		isPersistent = false
 	}
 
@@ -76,7 +78,7 @@ func (h *Handler) Connect(c *gin.Context) {
 	room := roomManager.GetOrCreateRoom(roomID, isPersistent, h.db)
 	log.Printf("Room ID: %s, Title: %s, Persistent: %v", room.ID, room.Title, isPersistent)
 
-	userID := room.AddUser(conn, userId)
+	userID := room.AddUser(conn, userId, name)
 
 	HandleEvents(conn, room, userID, h.db, isPersistent)
 

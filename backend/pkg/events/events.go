@@ -199,7 +199,12 @@ func (h *EventHandler) HandleCursorMove(data interface{}, room *types.Room, user
 	}
 
 	cursorEvent.Id = userID
-	cursorEvent.Name = "Anonymous"
+	for _, user := range room.Users {
+		if user.ID == userID {
+			cursorEvent.Name = user.Name
+			break
+		}
+	}
 
 	room.BroadcastEventToOthers("cursor-receive", cursorEvent, userID)
 }

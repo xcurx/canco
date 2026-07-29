@@ -81,13 +81,13 @@ func (rm *RoomManager) GetOrCreateRoom(roomID string, isPersistent bool, db *dat
 	return room
 }
 
-func (r *Room) AddUser(conn *websocket.Conn, userId string) string {
+func (r *Room) AddUser(conn *websocket.Conn, userId string, name string) string {
 	r.Mutex.Lock()
 	defer r.Mutex.Unlock()
 
 	user := User{
 		ID:   userId,
-		Name: "Anonymous",
+		Name: name,
 		UserState: UserState{
 			Operation: make([]Operation, 0),
 			Selected:  "",
