@@ -152,3 +152,10 @@ type Event struct {
 	Type string      `json:"type"`
 	Data interface{} `json:"data"`
 }
+
+type Cursor struct {
+	Id   string  `json:"id"`
+	Name string  `json:"name"`
+	X    float64 `json:"x"`
+	Y    float64 `json:"y"`
+}

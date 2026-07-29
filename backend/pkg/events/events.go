@@ -184,4 +184,22 @@ func (h *EventHandler) HandleRedo(data interface{}, room *types.Room, userID str
 	room.Mutex.Unlock()
 	room.BroadcastEvent(op.Type.String(), op)
 }
-	
+
+func (h *EventHandler) HandleCursorMove(data interface{}, room *types.Room, userID string) {	
+	b, err := json.Marshal(data)
+	if err != nil {
+		log.Println("Cursor unmarshal error:", err)
+		return
+	}
+
+	var cursorEvent types.Cursor
+	if err := json.Unmarshal(b, &cursorEvent); err != nil {
+		log.Println("Cursor unmarshal error at start:", err)
+		return
+	}
+
+	cursorEvent.Id = userID
+	cursorEvent.Name = "Anonymous"
+
+	room.BroadcastEventToOthers("cursor-receive", cursorEvent, userID)
+}

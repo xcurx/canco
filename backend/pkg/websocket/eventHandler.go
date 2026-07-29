@@ -39,6 +39,9 @@ func HandleEvents(conn *websocket.Conn, room *types.Room, userID string, db *dat
 		case "redo":
 			log.Println("Handling redo event")
 			eventHandler.HandleRedo(event.Data, room, userID)
+
+		case "cursor-send":
+			eventHandler.HandleCursorMove(event.Data, room, userID)
 		}
 	}
 }

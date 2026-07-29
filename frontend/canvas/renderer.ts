@@ -1,4 +1,4 @@
-import { ShapeData, CanvasState as CanvasStateEnum, Operation } from './type'
+import { ShapeData, CanvasState as CanvasStateEnum, Operation, CanvasCoords } from './type'
 import { CanvasState } from './state'
 import { drawMultiSelectionCage, drawSelectionCage, renderShape } from './renderShapes'
 import { HistoryManager } from './history'
@@ -7,6 +7,7 @@ import { InteractionManager, InteractionCallbacks } from './interaction'
 import { Socket, Message } from '../websocket/socket'
 import { Camera } from './camera'
 import { Cursor } from './cursor'
+import { RemoteCursor } from './remoteCursor'
 
 export class Renderer {
     private ctx: CanvasRenderingContext2D
@@ -17,6 +18,7 @@ export class Renderer {
     public historyManager: HistoryManager
     public toolManager: ToolManager
     public cursor: Cursor
+    public remoteCursors: Map<string, RemoteCursor> = new Map()
 
     private interactionManager: InteractionManager
     private camera: Camera = new Camera()
@@ -24,6 +26,7 @@ export class Renderer {
     private tempShape: ShapeData | null = null
     private currentInteractionState: CanvasStateEnum = CanvasStateEnum.IDLE
     private editingShapeId: string | null = null
+    private lastCursorSendTime = 0
 
     private socket: Socket | null = null
     private roomId?: string
@@ -43,7 +46,8 @@ export class Renderer {
             onUndo: () => this.historyManager.undo(),
             onRedo: () => this.historyManager.redo(),
             onCameraChange: () => this.render(),
-            onEditText: (shape) => this.onEditTextCallback?.(shape)
+            onEditText: (shape) => this.onEditTextCallback?.(shape),
+            onCursorMove: (coords) => this.handleCursorMove(coords)
         }
         
         this.historyManager = new HistoryManager(() => this.canvasState, {onHistoryChange: (result) => this.onHistoryChange(result)})
@@ -292,6 +296,10 @@ export class Renderer {
             }
         }
 
+        for (const cursor of this.remoteCursors.values()) {
+            cursor.render(this.ctx)
+        }
+
         this.ctx.restore()
     }
 
@@ -373,8 +381,26 @@ export class Renderer {
             this.canvasState = new CanvasState(msg.data as ShapeData[])
             this.render()
             return
+        } else if (msg.type === "cursor-receive") {
+            const data = msg.data
+            if (this.remoteCursors.has(data.id)) {
+                this.remoteCursors.get(data.id)?.update(data.x, data.y)
+            } else {
+                this.remoteCursors.set(data.id, new RemoteCursor(data.id, data.name, data.x, data.y))
+            }
+            this.render()
+            return
         }
         this.applyOperation(msg.data, true)
+    }
+
+    private handleCursorMove(coords: CanvasCoords) {
+        if (!this.socket) return
+        const now = Date.now()
+        if (now - this.lastCursorSendTime > 50) {
+            this.socket.sendMessage("cursor-send", {x: coords.x, y: coords.y})
+            this.lastCursorSendTime = now
+        }
     }
 
     animate = (): void => {

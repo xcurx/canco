@@ -13,6 +13,7 @@ import { CreateHandler } from './handlers/createHandler'
 import { PanHandler } from './handlers/panHandler'
 import { SelectHandler } from './handlers/selectHandler'
 import { Cursor } from './cursor'
+import { Socket } from '@/websocket/socket'
 
 export type InteractionCallbacks = {
     onStateChange: (state: CanvasStateEnum) => void
@@ -22,6 +23,7 @@ export type InteractionCallbacks = {
     onRedo: () => void
     onCameraChange: () => void
     onEditText?: (shape: ShapeData) => void
+    onCursorMove: (coords: CanvasCoords) => void
 }
 
 export class InteractionManager implements InteractionContext {
@@ -162,6 +164,7 @@ export class InteractionManager implements InteractionContext {
     handleMouseMove(coords: CanvasCoords, e: PointerEvent): void {
         e.preventDefault()
         if (this.activeHandler) this.activeHandler.onMouseMove(coords, e)
+        this.callbacks.onCursorMove(coords)
     }
 
     handleMouseUp(coords: CanvasCoords, e: PointerEvent): void {
