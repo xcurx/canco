@@ -52,13 +52,11 @@ func (h *EventHandler) HandleOperation(data interface{}, room *types.Room, userI
 	case types.SelectShape:
 		room.Mutex.Lock()
 		room.Mutex.Unlock()
-		log.Printf("Shape selected: %+v", op.Data)
 		// room.BroadcastEvent("SELECT_SHAPE", op.Data)
 
 	case types.MultiSelectShapes:
 		room.Mutex.Lock()
 		room.Mutex.Unlock()
-		log.Printf("Shapes multiselected: %+v", op.Data)
 		// room.BroadcastEvent("MULTISELECT_SHAPES", op.Data)
 
 	case types.CreateShapes:
@@ -73,7 +71,6 @@ func (h *EventHandler) HandleOperation(data interface{}, room *types.Room, userI
 	case types.DeselectAll:
 		room.Mutex.Lock()
 		room.Mutex.Unlock()
-		log.Println("All shapes deselected")
 		// room.BroadcastEvent("DESELECT_ALL", nil)
 
 	default:
@@ -124,11 +121,7 @@ func (h *EventHandler) HandleUndo(data interface{}, room *types.Room, userID str
 	room.Users[userIndex].UserState.UndoStack = undoStack[:len(undoStack)-1]
 	room.Users[userIndex].UserState.RedoStack = append(room.Users[userIndex].UserState.RedoStack, lastIndex)
 
-	log.Printf("UndoStack was: %v, popped index: %d, history length: %d", undoStack, lastIndex, len(room.RoomState.History))
-
 	op := room.RoomState.History[lastIndex]
-
-	log.Printf("Operation at index %d: type=%s, data=%+v, inverse data=%+v", lastIndex, op.Type.String(), op.Data, op.Inverse.Data)
 
 	if op.Inverse == nil {
 		log.Println("No inverse found for index:", lastIndex)
@@ -137,7 +130,6 @@ func (h *EventHandler) HandleUndo(data interface{}, room *types.Room, userID str
 	}
 
 	inverse := op.Inverse
-	log.Printf("Undoing with inverse: %s, data: %+v", inverse.Type.String(), inverse.Data)
 
     applyOperationToRoomState(inverse, room, h.db, h.isPersistent)
 
@@ -173,11 +165,7 @@ func (h *EventHandler) HandleRedo(data interface{}, room *types.Room, userID str
 	room.Users[userIndex].UserState.RedoStack = redoStack[:len(redoStack)-1]
 	room.Users[userIndex].UserState.UndoStack = append(room.Users[userIndex].UserState.UndoStack, lastIndex)
 
-	log.Printf("RedoStack was: %v, popped index: %d, history length: %d", redoStack, lastIndex, len(room.RoomState.History))
-
 	op := room.RoomState.History[lastIndex]
-
-	log.Println("Redoing with operation:", op.Type.String(), op.Data)
 
 	applyOperationToRoomState(&op, room, h.db, h.isPersistent)
 

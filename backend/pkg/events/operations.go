@@ -54,12 +54,10 @@ func createShape(op types.Operation, room *types.Room, userID string, db *databa
 	room.Mutex.Lock()
 	room.RoomState.Shapes = append(room.RoomState.Shapes, shape)
 	room.Mutex.Unlock()
-	log.Printf("Shape created: %+v", shape)
 	room.BroadcastEvent("CREATE_SHAPE", op)
 }
 
 func updateShape(op types.Operation, room *types.Room, userID string, db *database.DB, isPersistent bool) {
-	log.Println("The user id is: ", userID)
 	operationData, ok := op.Data.(map[string]interface{})
 	if !ok {
 		log.Println("Invalid shape data")
@@ -159,7 +157,6 @@ func updateShape(op types.Operation, room *types.Room, userID string, db *databa
 	}
 
 	room.Mutex.Unlock()
-	log.Printf("Shape updated: %+v", op.Data)
 	room.BroadcastEvent("UPDATE_SHAPE", op)
 }
 
@@ -196,7 +193,6 @@ func deleteShape(op types.Operation, room *types.Room, userID string, db *databa
 	}
 
 	room.Mutex.Unlock()
-	log.Printf("Shape deleted: %+v", op.Data)
 	room.BroadcastEvent("DELETE_SHAPE", op)
 }
 
@@ -219,7 +215,6 @@ func createShapes(op types.Operation, room *types.Room, userID string, db *datab
 	room.Mutex.Lock()
 	room.RoomState.Shapes = append(room.RoomState.Shapes, data.Shapes...)
 	room.Mutex.Unlock()
-	log.Printf("Shapes created: %d", len(data.Shapes))
 	room.BroadcastEvent("CREATE_SHAPES", op)
 }
 
@@ -264,7 +259,6 @@ func updateShapes(op types.Operation, room *types.Room, userID string, db *datab
 		}
 	}
 	room.Mutex.Unlock()
-	log.Printf("Shapes updated: %d", len(data.Updates))
 	room.BroadcastEvent("UPDATE_SHAPES", op)
 }
 
@@ -295,6 +289,5 @@ func deleteShapes(op types.Operation, room *types.Room, userID string, db *datab
 	}
 	room.RoomState.Shapes = newShapes
 	room.Mutex.Unlock()
-	log.Printf("Shapes deleted: %d", len(data.IDs))
 	room.BroadcastEvent("DELETE_SHAPES", op)
 }

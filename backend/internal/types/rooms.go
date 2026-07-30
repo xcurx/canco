@@ -136,7 +136,6 @@ func (r *Room) BroadcastEvent(eventType string, data interface{}) {
 	}
 
 	for _, user := range r.Users {
-		log.Println("Broadcasting to user", user.ID)
 		if err := user.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
 			log.Println("WriteMessage error for user", user.ID, ":", err)
 		}

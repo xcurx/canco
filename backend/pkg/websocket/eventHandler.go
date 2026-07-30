@@ -25,19 +25,15 @@ func HandleEvents(conn *websocket.Conn, room *types.Room, userID string, db *dat
 			log.Println("Unmarshal error at beginning:", err)
 			continue
 		}
-		log.Println(event)
 
 		switch event.Type {
 		case "operation":
-			log.Println("Handling operation event")
 			eventHandler.HandleOperation(event.Data, room, userID)
 
 		case "undo": 
-			log.Println("Handling undo event")
 			eventHandler.HandleUndo(event.Data, room, userID)
 
 		case "redo":
-			log.Println("Handling redo event")
 			eventHandler.HandleRedo(event.Data, room, userID)
 
 		case "cursor-send":
