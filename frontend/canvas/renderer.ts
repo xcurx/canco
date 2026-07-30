@@ -299,7 +299,7 @@ export class Renderer {
         }
 
         for (const cursor of this.remoteCursors.values()) {
-            cursor.render(this.ctx)
+            cursor.render(this.ctx, this.camera.scale)
         }
 
         this.ctx.restore()

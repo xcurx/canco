@@ -29,20 +29,24 @@ export class RemoteCursor {
         this.img.src = url
     }
 
-    render(ctx: CanvasRenderingContext2D) {
+    render(ctx: CanvasRenderingContext2D, scale: number = 1) {
         ctx.save()
-        ctx.drawImage(this.img, this.x, this.y, 24, 48)
+        ctx.translate(this.x, this.y)
+        ctx.scale(1 / scale, 1 / scale)
+        ctx.drawImage(this.img, -5.5, -3.2, 24, 24)
 
         ctx.font = "14px sans-serif"
         ctx.textAlign = "center"
         const nameWidth = ctx.measureText(this.name).width
         const borderRadius = 4
-        ctx.roundRect(this.x + 24/2 - nameWidth/2 - 4, this.y + 42, nameWidth + 8, 16, borderRadius)
+        
+        ctx.beginPath()
+        ctx.roundRect(10 - nameWidth/2 - 4, 28, nameWidth + 8, 16, borderRadius)
         ctx.fillStyle = this.color
         ctx.fill()
 
         ctx.fillStyle = "white"
-        ctx.fillText(this.name, this.x + 24/2, this.y + 48 + 6)
+        ctx.fillText(this.name, 10, 28 + 12)
         ctx.restore()
     }
 
